@@ -69,23 +69,6 @@ class manifestXML(object):
         # Add file elements to the manifest
         self.simple_manifest(new_zipfile, doi)
 
-    def extended_manifest(self, new_zipfile):
-        """
-        Old procedure to build a manifest XML based on the filenames
-        found in the zip file
-        """
-        filelist = new_zipfile.namelist()
-        for filename in filelist:
-            self.file = SubElement(self.root, "file")
-            self.filename = SubElement(self.file, "filename")
-            self.filename.text = filename
-
-            self.title = SubElement(self.file, "title")
-            self.title.text = filename
-
-            self.description = SubElement(self.file, "description")
-            self.description.text = filename
-
     def simple_manifest(self, new_zipfile, doi):
         """
         Add a simple XML file element to the manifest
@@ -96,7 +79,6 @@ class manifestXML(object):
         linktext_text = "Download zip folder"
         title_text = "Any figures and tables for this article are included in the PDF."
         title_text += " The zip folder contains additional supplemental files."
-        #title_text += self.get_file_contents_description(new_zipfile)
 
         # Add XML
         self.file = SubElement(self.root, "file")
@@ -108,40 +90,6 @@ class manifestXML(object):
 
         self.title = SubElement(self.file, "title")
         self.title.text = title_text
-
-    def get_file_contents_description(self, new_zipfile):
-        """
-        Given a zipfile, concatenate a description of the
-        types of files inside
-        """
-        file_count = 0
-        extension_counts = {}
-        description = ""
-        filelist = new_zipfile.namelist()
-        for filename in filelist:
-            file_count = file_count + 1
-            # Get the file extension
-            try:
-                extension = filename.split(".")[-1]
-            except:
-                extension = None
-            # Increment count of the extension type
-            try:
-                extension_counts[extension] += 1
-            except:
-                # Create the extension if it does not exist yet in the counter
-                extension_counts[extension] = 1
-
-        description = description + " The zip folder contains " + str(file_count) + " files"
-        if len(extension_counts) > 0:
-            description = description + " including: "
-            delim = ""
-            for key, value in extension_counts.items():
-                description = description + delim + "%s %s" % (value, key)
-                delim = ", "
-        description = description + "."
-
-        return description
 
     def prettyXML(self):
         publicId = '-//HIGHWIRE//DTD HighWire Data Supplement Manifest//EN'
@@ -177,23 +125,6 @@ class ElifeDocumentType(minidom.DocumentType):
             writer.write(self.internalSubset)
             writer.write("]")
         writer.write(">"+newl)
-
-def get_last_commit_to_master():
-    """
-    returns the last commit on the master branch. It would be more ideal to get the commit
-    from the branch we are currently on, but as this is a check mostly to help
-    with production issues, returning the commit from master will be sufficient.
-    """
-    repo = Repo(".")
-    last_commit = None
-    try:
-        last_commit = repo.commits()[0]
-    except AttributeError:
-        # Optimised for version 0.3.2.RC1
-        last_commit = repo.head.commit
-    return str(last_commit)
-    # commit =  repo.heads[0].commit
-    # return str(commit)
 
 def article_id_from_doi(doi):
     article_id = doi.split("/")[1]
