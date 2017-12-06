@@ -10,3 +10,11 @@ tmp/*
 !tmp/.keepme
 tests/tmp/*
 !tests/tmp/.keepme
+ftp_dir/*
+!ftp_dir/.keepme
+tests/ftp_dir/*
+!tests/ftp_dir/.keepme
+decapitate_pdf_dir/*
+!decapitate_pdf_dir/.keepme
+tests/decapitate_pdf_dir/*
+!tests/decapitate_pdf_dir/.keepme
