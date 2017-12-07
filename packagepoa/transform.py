@@ -237,12 +237,12 @@ def move_files_into_new_zipfile(current_zipfile, file_title_map, new_zipfile, do
         f.close()
         new_zipfile.write(temp_file_name, new_name)
 
-def add_file_to_zipfile(new_zipfile, name, new_name=None):
+def add_file_to_zipfile(new_zipfile, name, new_name):
     """
     Simple add a file to a zip file
     """
-    if not new_name:
-        new_name = name
+    if not new_zipfile or not name or not new_name:
+        return
     new_zipfile.write(name, new_name)
 
 def alert_production(alert_message):

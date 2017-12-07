@@ -73,5 +73,39 @@ class TestTransform(unittest.TestCase):
         clean_test_directories()
 
 
+    @patch.object(transform, 'decapitate_pdf_with_error_check')
+    def test_process_zipfile_failed_pdf(self, fake_decapitate):
+        "tests of when pdf decapitaion fails, for test coverage"
+        # first example is pdf decapitator returns False due to an error
+        fake_decapitate.return_value = False
+        zipfile_name = os.path.join(TEST_DATA_PATH,
+                                    '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
+        output_dir = transform.settings.FTP_DIR
+        return_value = transform.process_zipfile(zipfile_name, output_dir)
+        # for now it still returns True
+        self.assertTrue(return_value)
+        # second example returns True but the pdf file is not found in the expected folder
+        fake_decapitate.return_value = True
+        zipfile_name = os.path.join(TEST_DATA_PATH,
+                                    '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
+        output_dir = transform.settings.FTP_DIR
+        return_value = transform.process_zipfile(zipfile_name, output_dir)
+        # for now it still returns True
+        self.assertTrue(return_value)
+        # clean the test directories
+        clean_test_directories()
+
+    def test_add_file_to_zipfile(self):
+        "test adding files to a zip file"
+        zip_file_name = os.path.join(transform.settings.TMP_DIR, 'test.zip')
+        zip_file = zipfile.ZipFile(zip_file_name, 'w')
+        file_name =  os.path.join(transform.settings.TMP_DIR, '.keepme')
+        # try to add a file not specifying a new name
+        transform.add_file_to_zipfile(zip_file, file_name, None)
+        self.assertEqual(zip_file.namelist(), [])
+        # clean the test directories
+        zip_file.close()
+        clean_test_directories()
+
 if __name__ == '__main__':
     unittest.main()
