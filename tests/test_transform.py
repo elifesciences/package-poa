@@ -57,12 +57,12 @@ class TestTransform(unittest.TestCase):
         # check return value
         self.assertTrue(return_value)
         # check directory contents
-        self.assertEqual(list_test_dir(transform.settings.TMP_DIR),
+        self.assertEqual(sorted(list_test_dir(transform.settings.TMP_DIR)),
                         ['decap_elife_poa_e12717.pdf', 'elife12717_Supplemental_files.zip',
                          'temp_transfer'])
-        self.assertEqual(list_test_dir(transform.settings.DECAPITATE_PDF_DIR),
+        self.assertEqual(sorted(list_test_dir(transform.settings.DECAPITATE_PDF_DIR)),
                         ['decap_elife_poa_e12717.pdf'])
-        self.assertEqual(list_test_dir(transform.settings.FTP_DIR),
+        self.assertEqual(sorted(list_test_dir(transform.settings.FTP_DIR)),
                         ['elife_poa_e12717.pdf', 'elife_poa_e12717_ds.zip'])
         # check the ds zip contents
         zip_file_name = os.path.join(transform.settings.FTP_DIR, 'elife_poa_e12717_ds.zip')
