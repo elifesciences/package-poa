@@ -302,11 +302,11 @@ def add_hw_manifest_to_new_zipfile(new_zipfile, hw_manifest):
     f.close()
     new_zipfile.write(temp_file_name, "manifest.xml")
 
-def process_zipfile(zipfile_name, output_dir):
+def process_zipfile(zipfile_name):
     current_zipfile = zipfile.ZipFile(zipfile_name, 'r')
     doi = get_doi_from_zipfile(current_zipfile)
     file_title_map = get_filename_new_title_map_from_zipfile(current_zipfile)
-    copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile)
+    copy_pdf_to_hw_staging_dir(file_title_map, settings.FTP_DIR, doi, current_zipfile)
     pdfless_file_title_map = remove_pdf_from_file_title_map(file_title_map)
 
     # Internal zip file

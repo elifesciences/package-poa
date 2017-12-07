@@ -52,8 +52,7 @@ class TestTransform(unittest.TestCase):
         fake_decapitate = mock_decapitate_pdf('decap_elife_poa_e12717.pdf')
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        output_dir = transform.settings.FTP_DIR
-        return_value = transform.process_zipfile(zipfile_name, output_dir)
+        return_value = transform.process_zipfile(zipfile_name)
         # check return value
         self.assertTrue(return_value)
         # check directory contents
@@ -72,7 +71,6 @@ class TestTransform(unittest.TestCase):
         # clean the test directories
         clean_test_directories()
 
-
     @patch.object(transform, 'decapitate_pdf_with_error_check')
     def test_process_zipfile_failed_pdf(self, fake_decapitate):
         "tests of when pdf decapitaion fails, for test coverage"
@@ -80,16 +78,14 @@ class TestTransform(unittest.TestCase):
         fake_decapitate.return_value = False
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        output_dir = transform.settings.FTP_DIR
-        return_value = transform.process_zipfile(zipfile_name, output_dir)
+        return_value = transform.process_zipfile(zipfile_name)
         # for now it still returns True
         self.assertTrue(return_value)
         # second example returns True but the pdf file is not found in the expected folder
         fake_decapitate.return_value = True
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        output_dir = transform.settings.FTP_DIR
-        return_value = transform.process_zipfile(zipfile_name, output_dir)
+        return_value = transform.process_zipfile(zipfile_name)
         # for now it still returns True
         self.assertTrue(return_value)
         # clean the test directories
