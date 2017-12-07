@@ -1,5 +1,6 @@
 import logging
 import subprocess
+from conf import raw_config, parse_raw_config
 
 FORMAT = logging.Formatter("%(created)f - %(levelname)s - %(processName)s - %(name)s - %(message)s")
 LOGFILE = "decapitate_pdf.log"
@@ -13,11 +14,17 @@ h.setFormatter(FORMAT)
 
 logger.addHandler(h)
 
-def decapitate_pdf_with_error_check(pdf_in, pdf_out_dir):
+def decapitate_pdf_with_error_check(pdf_in, pdf_out_dir, config_section='elife'):
+    # configuration
+    poa_config = parse_raw_config(raw_config(config_section))
+    pdf_executable = poa_config.get('strip_coverletter_executable')
+    if not pdf_executable:
+        return False
+
     # PDF out file name
     pdf_out = pdf_out_dir + pdf_in.split('/')[-1]
 
-    f = subprocess.Popen(["/opt/strip-coverletter/strip-coverletter.sh", pdf_in, pdf_out], \
+    f = subprocess.Popen([pdf_executable, pdf_in, pdf_out], \
                          stdout=subprocess.PIPE, \
                          stderr=subprocess.PIPE)
 
