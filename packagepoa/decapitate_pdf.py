@@ -14,7 +14,7 @@ h.setFormatter(FORMAT)
 
 logger.addHandler(h)
 
-def decapitate_pdf_with_error_check(pdf_in, pdf_out_dir, config_section='elife'):
+def decapitate_pdf_with_error_check(pdf_in, pdf_out_dir, config_section=None):
     # configuration
     poa_config = parse_raw_config(raw_config(config_section))
     pdf_executable = poa_config.get('strip_coverletter_executable')

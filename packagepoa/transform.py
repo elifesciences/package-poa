@@ -10,6 +10,7 @@ from xml.dom import minidom
 import packagepoa.settings as settings
 from packagepoa.decapitate_pdf import decapitate_pdf_with_error_check
 from elifearticle import article as ea
+from conf import raw_config, parse_raw_config
 
 """
 open the zip file from EJP,
@@ -49,7 +50,7 @@ workflow_logger.setLevel(logging.INFO)
 
 class manifestXML(object):
 
-    def __init__(self, doi, new_zipfile):
+    def __init__(self, doi, new_zipfile, filename_pattern):
         """
         set the root node
         get the article type from the object passed in to the class
@@ -66,15 +67,15 @@ class manifestXML(object):
         self.linktext.text = "Supplementary data"
 
         # Add file elements to the manifest
-        self.simple_manifest(new_zipfile, doi)
+        self.simple_manifest(new_zipfile, doi, filename_pattern)
 
-    def simple_manifest(self, new_zipfile, doi):
+    def simple_manifest(self, new_zipfile, doi, filename_pattern):
         """
         Add a simple XML file element to the manifest
         Note: linktext element must come before title (order matters)
         """
         # Filename is the folder inside the zip file
-        filename_text = get_new_internal_zipfile_name(doi)
+        filename_text = get_new_internal_zipfile_name(doi, filename_pattern)
         linktext_text = "Download zip folder"
         title_text = "Any figures and tables for this article are included in the PDF."
         title_text += " The zip folder contains additional supplemental files."
@@ -126,12 +127,10 @@ class ElifeDocumentType(minidom.DocumentType):
         writer.write(">"+newl)
 
 def article_id_from_doi(doi):
-    article_id = doi.split("/")[1]
-    article_id = article_id.replace(".", "")
-    article_id = article_id.replace("eLife", "e")
+    article_id = doi.split(".")[-1]
     return article_id
 
-def gen_new_name_for_file(name, title, doi):
+def gen_new_name_for_file(name, title, doi, filename_pattern):
     """
     take the following:
     and generates a file name like:
@@ -144,9 +143,11 @@ def gen_new_name_for_file(name, title, doi):
     new_name_front = new_name_front.replace("__", "_")
     if new_name_front == "Merged_PDF":
         # we ignore the main file name and just use our base POA convention
-        new_name = "elife_poa_" + article_id + "." + file_ext
+        new_name = filename_pattern.format(
+            article_id=article_id, extra='', file_ext=file_ext)
     else:
-        new_name = "elife_poa_" + article_id + "_" + new_name_front + "." + file_ext
+        new_name = filename_pattern.format(
+            article_id=article_id, extra='_' + new_name_front, file_ext=file_ext)
     return new_name
 
 def get_doi_from_zipfile(ejp_input_zipfile):
@@ -178,34 +179,37 @@ def get_filename_new_title_map_from_zipfile(ejp_input_zipfile):
             file_title_map[filename] = title
     return file_title_map
 
-def get_new_zipfile_name(doi):
+def get_new_zipfile_name(doi, filename_pattern):
     article_id = article_id_from_doi(doi)
-    new_zipfile_name = "elife_poa_" + article_id + "_ds.zip"
+    new_zipfile_name = None
+    if filename_pattern:
+        new_zipfile_name = filename_pattern.format(article_id=article_id)
     return new_zipfile_name
 
-def get_new_internal_zipfile_name(doi):
+def get_new_internal_zipfile_name(doi, filename_pattern):
     article_id = article_id_from_doi(doi)
-    # Remove the leading 'e' from article_id
-    doi_id = article_id[1:]
-    new_zipfile_folder_name = "elife" + doi_id + "_Supplemental_files.zip"
+    new_zipfile_folder_name = None
+    if filename_pattern:
+        new_zipfile_folder_name = filename_pattern.format(article_id=article_id)
     return new_zipfile_folder_name
 
-def gen_new_internal_zipfile(doi):
-    new_zipfile_name = get_new_internal_zipfile_name(doi)
+def gen_new_internal_zipfile(doi, filename_pattern):
+    new_zipfile_name = get_new_internal_zipfile_name(doi, filename_pattern)
     new_zipfile_name_plus_path = settings.TMP_DIR + "/" + new_zipfile_name
     new_zipfile = zipfile.ZipFile(new_zipfile_name_plus_path, 'w')
     return new_zipfile
 
-def gen_new_zipfile(doi):
-    new_zipfile_name = get_new_zipfile_name(doi)
+def gen_new_zipfile(doi, filename_pattern):
+    new_zipfile_name = get_new_zipfile_name(doi, filename_pattern)
     new_zipfile_name_plus_path = settings.TMP_DIR + "/" + new_zipfile_name
     new_zipfile = zipfile.ZipFile(new_zipfile_name_plus_path, 'w')
     return new_zipfile
 
-def move_files_into_new_zipfile(current_zipfile, file_title_map, new_zipfile, doi):
+def move_files_into_new_zipfile(current_zipfile, file_title_map, new_zipfile, doi,
+                                filename_pattern):
     for name in file_title_map.keys():
         title = file_title_map[name]
-        new_name = gen_new_name_for_file(name, title, doi)
+        new_name = gen_new_name_for_file(name, title, doi, filename_pattern)
 
         file = current_zipfile.read(name)
         temp_file_name = settings.TMP_DIR + "/" + "temp_transfer"
@@ -222,7 +226,7 @@ def add_file_to_zipfile(new_zipfile, name, new_name):
         return
     new_zipfile.write(name, new_name)
 
-def copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile):
+def copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile, config_section):
     """
     we will attempt to generate a headless pdf and move this pdf
     to the ftp staging site.
@@ -237,7 +241,8 @@ def copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile)
 
     TODO: - elife - ianm - tidy up paths to temporary pdf decpitation paths
     """
-
+    # configuration
+    poa_config = parse_raw_config(raw_config(config_section))
 
     for name in file_title_map.keys():
         # we extract the pdf from the zipfile
@@ -245,7 +250,7 @@ def copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile)
 
         if title == "Merged PDF":
             print title
-            new_name = gen_new_name_for_file(name, title, doi)
+            new_name = gen_new_name_for_file(name, title, doi, poa_config.get('filename_pattern'))
             file = current_zipfile.read(name)
             print new_name
             decap_name = "decap_" + new_name
@@ -255,7 +260,8 @@ def copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile)
             temp_file.write(file)
             temp_file.close()
 
-    if decapitate_pdf_with_error_check(decap_name_plus_path, settings.DECAPITATE_PDF_DIR + "/"):
+    if decapitate_pdf_with_error_check(decap_name_plus_path, settings.DECAPITATE_PDF_DIR + "/",
+                                       config_section):
         # pass the local file path, and teh path to a temp dir, to the decapiation script
         try:
             move_file = open(settings.DECAPITATE_PDF_DIR + "/" + decap_name, "rb").read()
@@ -285,13 +291,13 @@ def remove_pdf_from_file_title_map(file_title_map):
             new_map[name] = title
     return new_map
 
-def generate_hw_manifest(new_zipfile, doi):
-    manifestObject = manifestXML(doi, new_zipfile)
+def generate_hw_manifest(new_zipfile, doi, filename_pattern):
+    manifestObject = manifestXML(doi, new_zipfile, filename_pattern)
     manifest = manifestObject.prettyXML()
     return manifest
 
-def move_new_zipfile(doi, ftp_dir):
-    new_zipfile_name = get_new_zipfile_name(doi)
+def move_new_zipfile(doi, ftp_dir, filename_pattern):
+    new_zipfile_name = get_new_zipfile_name(doi, filename_pattern)
     new_zipfile_name_plus_path = settings.TMP_DIR + "/" + new_zipfile_name
     shutil.move(new_zipfile_name_plus_path, ftp_dir + "/" + new_zipfile_name)
 
@@ -302,26 +308,32 @@ def add_hw_manifest_to_new_zipfile(new_zipfile, hw_manifest):
     f.close()
     new_zipfile.write(temp_file_name, "manifest.xml")
 
-def process_zipfile(zipfile_name):
+def process_zipfile(zipfile_name, config_section=None):
+    # configuration
+    poa_config = parse_raw_config(raw_config(config_section))
+
+    # open the zip file
     current_zipfile = zipfile.ZipFile(zipfile_name, 'r')
     doi = get_doi_from_zipfile(current_zipfile)
     file_title_map = get_filename_new_title_map_from_zipfile(current_zipfile)
-    copy_pdf_to_hw_staging_dir(file_title_map, settings.FTP_DIR, doi, current_zipfile)
+    copy_pdf_to_hw_staging_dir(file_title_map, settings.FTP_DIR, doi,
+                               current_zipfile, config_section)
     pdfless_file_title_map = remove_pdf_from_file_title_map(file_title_map)
 
     # Internal zip file
-    internal_zipfile = gen_new_internal_zipfile(doi)
-    move_files_into_new_zipfile(current_zipfile, pdfless_file_title_map, internal_zipfile, doi)
+    internal_zipfile = gen_new_internal_zipfile(doi, poa_config.get('internal_zipfile_pattern'))
+    move_files_into_new_zipfile(current_zipfile, pdfless_file_title_map, internal_zipfile, doi,
+                                poa_config.get('filename_pattern'))
     internal_zipfile.close()
 
     # Outside wrapping zip file
-    new_zipfile = gen_new_zipfile(doi)
+    new_zipfile = gen_new_zipfile(doi, poa_config.get('zipfile_pattern'))
     new_name = internal_zipfile.filename.split("/")[-1]
     add_file_to_zipfile(new_zipfile, internal_zipfile.filename, new_name)
 
-    hw_manifest = generate_hw_manifest(new_zipfile, doi)
+    hw_manifest = generate_hw_manifest(new_zipfile, doi, poa_config.get('internal_zipfile_pattern'))
     add_hw_manifest_to_new_zipfile(new_zipfile, hw_manifest)
     # Close zip file before moving
     new_zipfile.close()
-    move_new_zipfile(doi, settings.FTP_DIR)
+    move_new_zipfile(doi, settings.FTP_DIR, poa_config.get('zipfile_pattern'))
     return True

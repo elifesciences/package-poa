@@ -52,7 +52,7 @@ class TestTransform(unittest.TestCase):
         fake_decapitate = mock_decapitate_pdf('decap_elife_poa_e12717.pdf')
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        return_value = transform.process_zipfile(zipfile_name)
+        return_value = transform.process_zipfile(zipfile_name, 'elife')
         # check return value
         self.assertTrue(return_value)
         # check directory contents
@@ -78,14 +78,14 @@ class TestTransform(unittest.TestCase):
         fake_decapitate.return_value = False
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        return_value = transform.process_zipfile(zipfile_name)
+        return_value = transform.process_zipfile(zipfile_name, 'elife')
         # for now it still returns True
         self.assertTrue(return_value)
         # second example returns True but the pdf file is not found in the expected folder
         fake_decapitate.return_value = True
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        return_value = transform.process_zipfile(zipfile_name)
+        return_value = transform.process_zipfile(zipfile_name, 'elife')
         # for now it still returns True
         self.assertTrue(return_value)
         # clean the test directories
