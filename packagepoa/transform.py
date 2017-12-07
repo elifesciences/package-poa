@@ -7,7 +7,6 @@ from collections import namedtuple
 from xml.etree.ElementTree import Element, SubElement, Comment, tostring
 from xml.etree import ElementTree
 from xml.dom import minidom
-import arrow
 import packagepoa.settings as settings
 from packagepoa.decapitate_pdf import decapitate_pdf_with_error_check
 from elifearticle import article as ea
@@ -132,12 +131,6 @@ def article_id_from_doi(doi):
     article_id = article_id.replace("eLife", "e")
     return article_id
 
-def get_datestamp():
-    a = arrow.utcnow()
-    date_stamp = (str(a.datetime.year) + str(a.datetime.month).zfill(2) +
-                  str(a.datetime.day).zfill(2))
-    return date_stamp
-
 def gen_new_name_for_file(name, title, doi):
     """
     take the following:
@@ -185,22 +178,6 @@ def get_filename_new_title_map_from_zipfile(ejp_input_zipfile):
             file_title_map[filename] = title
     return file_title_map
 
-# def unpack_and_rename_files_from_zip(ejp_input_zipfile):
-#     print ejp_input_zipfile
-#     if doi:
-#         zf = zipfile.ZipFile(ejp_input_zipfile, 'r')
-#         logger.info("doi obtained for " + str(ejp_input_zipfile))
-#         for name in file_title_map.keys():
-#             title = file_title_map[name]
-#             new_name = gen_new_name_for_file(name, title, doi)
-#             file = zf.read(name)
-#             out_handler = open(output_dir + "/" + new_name, "w")
-#             out_handler.write(file)
-#             out_handler.close()
-#             print new_name
-#     else:
-#         logger.warning("unable to find a doi for " + str(ejp_input_zipfile))
-
 def get_new_zipfile_name(doi):
     article_id = article_id_from_doi(doi)
     new_zipfile_name = "elife_poa_" + article_id + "_ds.zip"
@@ -237,17 +214,13 @@ def move_files_into_new_zipfile(current_zipfile, file_title_map, new_zipfile, do
         f.close()
         new_zipfile.write(temp_file_name, new_name)
 
-def add_file_to_zipfile(new_zipfile, name, new_name=None):
+def add_file_to_zipfile(new_zipfile, name, new_name):
     """
     Simple add a file to a zip file
     """
-    if not new_name:
-        new_name = name
+    if not new_zipfile or not name or not new_name:
+        return
     new_zipfile.write(name, new_name)
-
-def alert_production(alert_message):
-    ""
-    test_message = "holy shit batman, something's gone wrong"
 
 def copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile):
     """
@@ -300,7 +273,6 @@ def copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile)
         move_file = file
         alert_message = "could not decapitate " + new_name
         logger.error(alert_message)
-        alert_production(alert_message)
 
 
 def remove_pdf_from_file_title_map(file_title_map):
@@ -330,35 +302,11 @@ def add_hw_manifest_to_new_zipfile(new_zipfile, hw_manifest):
     f.close()
     new_zipfile.write(temp_file_name, "manifest.xml")
 
-def get_doi_from_zipfile_name(current_zipfile):
-    """
-    function is introduced to deal with lack of DOI
-    being provided by EJP. We infer the article number
-    from the name of the zip file, and we generate
-    a doi off of this.
-
-    Other code that takes the doi as an argument requires a full doi
-    even though that code just uses this to parse backwards to the
-    article number.
-
-    TODO - elife - ianm - refactor code to use only article number
-    """
-    doi_base = "10.7554/eLife."
-    article_number = current_zipfile.split("_")[0]
-    doi = doi_base + article_number
-    return doi
-
-def extract_pdf_from_zipfile(current_zipfile):
-    pdf = "this is a pdf"
-    return pdf
-
-def process_zipfile(zipfile_name, output_dir):
+def process_zipfile(zipfile_name):
     current_zipfile = zipfile.ZipFile(zipfile_name, 'r')
     doi = get_doi_from_zipfile(current_zipfile)
-    #doi = get_doi_from_zipfile_name(zipfile_name)
     file_title_map = get_filename_new_title_map_from_zipfile(current_zipfile)
-    #extracted_pdf = extract_pdf_from_zipfile(current_zipfile)
-    copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile)
+    copy_pdf_to_hw_staging_dir(file_title_map, settings.FTP_DIR, doi, current_zipfile)
     pdfless_file_title_map = remove_pdf_from_file_title_map(file_title_map)
 
     # Internal zip file
