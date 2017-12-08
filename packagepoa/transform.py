@@ -1,17 +1,3 @@
-import zipfile
-import glob
-import logging
-import shutil
-import os
-from xml.dom.minidom import Document
-from collections import namedtuple
-from xml.etree.ElementTree import Element, SubElement, Comment, tostring
-from xml.etree import ElementTree
-from xml.dom import minidom
-from packagepoa.decapitate_pdf import decapitate_pdf_with_error_check
-from elifearticle import article as ea
-from conf import raw_config, parse_raw_config
-
 """
 open the zip file from EJP,
 get the manifest.xml file
@@ -21,6 +7,14 @@ find the pdf file and decapitate the cover page from it
 move the PDF to the output directory
 move the new zip file to the output directory
 """
+
+import zipfile
+import logging
+import shutil
+import os
+from xml.etree import ElementTree
+from packagepoa.decapitate_pdf import decapitate_pdf_with_error_check
+from packagepoa.conf import raw_config, parse_raw_config
 
 # local logger
 logger = logging.getLogger('transform')
@@ -77,18 +71,18 @@ def get_doi_from_zipfile(ejp_input_zipfile):
                 doi = doi_base + article_number
     return doi
 
-def get_filename_new_title_map_from_zipfile(ejp_input_zipfile):
+def get_filename_new_title_map(ejp_input_zipfile):
     manifest_logger.info("unpacking and renaming " + str(ejp_input_zipfile.filename))
     file_title_map = {}
     manifest = ejp_input_zipfile.read("manifest.xml")
     tree = ElementTree.fromstring(manifest)
     for child in tree:
         if child.tag == "file":
-            for file in child:
-                if file.tag == "filename":
-                    filename = file.text
-                if file.tag == "title":
-                    title = file.text
+            for file_tag in child:
+                if file_tag.tag == "filename":
+                    filename = file_tag.text
+                if file_tag.tag == "title":
+                    title = file_tag.text
             file_title_map[filename] = title
     return file_title_map
 
@@ -146,31 +140,31 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
         if title == "Merged PDF":
             print title
             new_name = gen_new_name_for_file(name, title, doi, poa_config.get('filename_pattern'))
-            file = current_zipfile.read(name)
+            file_from_zip = current_zipfile.read(name)
             print new_name
             decap_name = "decap_" + new_name
             decap_name_plus_path = poa_config.get('tmp_dir') + "/" + decap_name
             # we save the pdf to a local file
             temp_file = open(decap_name_plus_path, "wb")
-            temp_file.write(file)
+            temp_file.write(file_from_zip)
             temp_file.close()
 
     if decapitate_pdf_with_error_check(
-        decap_name_plus_path, poa_config.get('decapitate_pdf_dir') + os.sep, poa_config):
+            decap_name_plus_path, poa_config.get('decapitate_pdf_dir') + os.sep, poa_config):
         # pass the local file path, and teh path to a temp dir, to the decapiation script
         try:
-            move_file = open(os.path.join(poa_config.get('decapitate_pdf_dir'), decap_name), "rb").read()
+            move_file = open(
+                os.path.join(poa_config.get('decapitate_pdf_dir'), decap_name), "rb").read()
             out_handler = open(os.path.join(output_dir, new_name), "wb")
             out_handler.write(move_file)
             out_handler.close()
-        except:
+        except IOError:
             # The decap may return true but the file does not exist for some reason
             #  allow the transformation to continue in order to processes the supplementary files
             alert_message = "decap returned true but the pdf file is missing " + new_name
             logger.error(alert_message)
     else:
-        # if the decapitation script has failed, we move the original pdf file
-        move_file = file
+        # if the decapitation script has failed
         alert_message = "could not decapitate " + new_name
         logger.error(alert_message)
 
@@ -200,9 +194,9 @@ def process_zipfile(zipfile_name, config_section=None, poa_config=None):
     # open the zip file
     current_zipfile = zipfile.ZipFile(zipfile_name, 'r')
     doi = get_doi_from_zipfile(current_zipfile)
-    file_title_map = get_filename_new_title_map_from_zipfile(current_zipfile)
+    file_title_map = get_filename_new_title_map(current_zipfile)
     copy_pdf_to_output_dir(file_title_map, poa_config.get('output_dir'), doi,
-                               current_zipfile, poa_config)
+                           current_zipfile, poa_config)
     pdfless_file_title_map = remove_pdf_from_file_title_map(file_title_map)
 
     # supplements zip file

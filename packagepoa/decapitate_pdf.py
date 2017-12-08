@@ -1,6 +1,5 @@
 import logging
 import subprocess
-from conf import raw_config, parse_raw_config
 
 FORMAT = logging.Formatter("%(created)f - %(levelname)s - %(processName)s - %(name)s - %(message)s")
 LOGFILE = "decapitate_pdf.log"
