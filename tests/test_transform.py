@@ -59,8 +59,7 @@ class TestTransform(unittest.TestCase):
         self.assertTrue(return_value)
         # check directory contents
         self.assertEqual(sorted(list_test_dir(POA_CONFIG.get('tmp_dir'))),
-                        ['decap_elife_poa_e12717.pdf', 'elife12717_Supplemental_files.zip',
-                         'temp_transfer'])
+                        ['decap_elife_poa_e12717.pdf', 'temp_transfer'])
         self.assertEqual(sorted(list_test_dir(POA_CONFIG.get('decapitate_pdf_dir'))),
                         ['decap_elife_poa_e12717.pdf'])
         self.assertEqual(sorted(list_test_dir(POA_CONFIG.get('output_dir'))),
@@ -68,8 +67,34 @@ class TestTransform(unittest.TestCase):
         # check the ds zip contents
         zip_file_name = os.path.join(POA_CONFIG.get('output_dir'), 'elife_poa_e12717_ds.zip')
         with zipfile.ZipFile(zip_file_name, 'r') as zip_file:
-            self.assertEqual(zip_file.namelist(), ['elife12717_Supplemental_files.zip',
-                                                   'manifest.xml'])
+            self.assertEqual(sorted(zip_file.namelist()), [
+                'elife_poa_e12717_Figure_1_figure_supplement_1.pdf',
+                'elife_poa_e12717_Figure_2_figure_supplement_1.pdf',
+                'elife_poa_e12717_Figure_2_figure_supplement_2.pdf',
+                'elife_poa_e12717_Figure_3_figure_supplement_1.pdf',
+                'elife_poa_e12717_Figure_3_figure_supplement_2.pdf',
+                'elife_poa_e12717_Figure_3_figure_supplement_3.pdf',
+                'elife_poa_e12717_Figure_4_figure_supplement_1.pdf',
+                'elife_poa_e12717_Figure_4_figure_supplement_2.pdf',
+                'elife_poa_e12717_Figure_6_figure_supplement_1.pdf',
+                'elife_poa_e12717_Figure_6_figure_supplement_2.pdf',
+                'elife_poa_e12717_Figure_7_figure_supplement_1.pdf',
+                'elife_poa_e12717_Figure_8_figure_supplement_1.pdf',
+                'elife_poa_e12717_Supplementary_File_1.xls',
+                'elife_poa_e12717_Supplementary_File_2.xlsx',
+                'elife_poa_e12717_Supplementary_File_3.xls',
+                'elife_poa_e12717_Video_1.mov',
+                'elife_poa_e12717_Video_10.mov',
+                'elife_poa_e12717_Video_11.mov',
+                'elife_poa_e12717_Video_12.mov',
+                'elife_poa_e12717_Video_2.mov',
+                'elife_poa_e12717_Video_3.mov',
+                'elife_poa_e12717_Video_4.mov',
+                'elife_poa_e12717_Video_5.mov',
+                'elife_poa_e12717_Video_6.mov',
+                'elife_poa_e12717_Video_7.mov',
+                'elife_poa_e12717_Video_8.mov',
+                'elife_poa_e12717_Video_9.mov'])
         # clean the test directories
         clean_test_directories()
 
@@ -80,14 +105,14 @@ class TestTransform(unittest.TestCase):
         fake_decapitate.return_value = False
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        return_value = transform.process_zipfile(zipfile_name, POA_CONFIG)
+        return_value = transform.process_zipfile(zipfile_name, None, None)
         # for now it still returns True
         self.assertTrue(return_value)
         # second example returns True but the pdf file is not found in the expected folder
         fake_decapitate.return_value = True
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        return_value = transform.process_zipfile(zipfile_name, POA_CONFIG)
+        return_value = transform.process_zipfile(zipfile_name, None, None)
         # for now it still returns True
         self.assertTrue(return_value)
         # clean the test directories
