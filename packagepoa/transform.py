@@ -14,38 +14,29 @@ from conf import raw_config, parse_raw_config
 
 """
 open the zip file from EJP,
-
-get the manifext.xml file
-
-move the pdf to the hw staging dir
-
-rename and move supp files to a new zipfile called
-    elife_poa_e000213_supporting_files.zip
-
-find the pdf file and move this to the hw ftp staging directory
-
-generate a new manifest and instert into the new zip file
-
-move the new zip file to the HW staging site
-
-move the old ejp zip file to the processed files directory
+get the manifest.xml file
+move the pdf
+rename and move supp files to a new zipfile
+find the pdf file and decapitate the cover page from it
+move the PDF to the output directory
+move the new zip file to the output directory
 """
 
 # local logger
-logger = logging.getLogger('transformEjpToHWZip')
-hdlr = logging.FileHandler('transformEjpToHWZip.log')
+logger = logging.getLogger('transform')
+hdlr = logging.FileHandler('transform.log')
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
 
 # global logger
-workflow_logger = logging.getLogger('ejp_to_hw_workflow')
-hdlr = logging.FileHandler('ejp_to_hw_workflow.log')
+manifest_logger = logging.getLogger('manifest')
+hdlr = logging.FileHandler('manifest.log')
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 hdlr.setFormatter(formatter)
-workflow_logger.addHandler(hdlr)
-workflow_logger.setLevel(logging.INFO)
+manifest_logger.addHandler(hdlr)
+manifest_logger.setLevel(logging.INFO)
 
 
 def article_id_from_doi(doi):
@@ -87,7 +78,7 @@ def get_doi_from_zipfile(ejp_input_zipfile):
     return doi
 
 def get_filename_new_title_map_from_zipfile(ejp_input_zipfile):
-    workflow_logger.info("unpacking and renaming" + str(ejp_input_zipfile))
+    manifest_logger.info("unpacking and renaming " + str(ejp_input_zipfile.filename))
     file_title_map = {}
     manifest = ejp_input_zipfile.read("manifest.xml")
     tree = ElementTree.fromstring(manifest)
@@ -136,7 +127,7 @@ def add_file_to_zipfile(new_zipfile, name, new_name):
         return
     new_zipfile.write(name, new_name)
 
-def copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile, poa_config):
+def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa_config):
     """
     we will attempt to generate a headless pdf and move this pdf
     to the ftp staging site.
@@ -214,7 +205,7 @@ def process_zipfile(zipfile_name, poa_config, config_section=None):
     current_zipfile = zipfile.ZipFile(zipfile_name, 'r')
     doi = get_doi_from_zipfile(current_zipfile)
     file_title_map = get_filename_new_title_map_from_zipfile(current_zipfile)
-    copy_pdf_to_hw_staging_dir(file_title_map, poa_config.get('output_dir'), doi,
+    copy_pdf_to_output_dir(file_title_map, poa_config.get('output_dir'), doi,
                                current_zipfile, poa_config)
     pdfless_file_title_map = remove_pdf_from_file_title_map(file_title_map)
 
