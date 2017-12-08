@@ -130,17 +130,13 @@ def add_file_to_zipfile(new_zipfile, name, new_name):
 def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa_config):
     """
     we will attempt to generate a headless pdf and move this pdf
-    to the ftp staging site.
+    to the output directory.
 
-    if this headless creation fails, we will raise an error to
-    production@elifesciecnes.org, and try to copy the original pdf
-    file to ftp staging
+    if this headless creation fails, we will raise an error in the log file
 
-    the function that we call to decapitate the pdf is contained in decapitatePDF.py.
-    It manages some error handline, and tries to determine witheher the pdf
-    cover content has been celanly removed.
-
-    TODO: - elife - ianm - tidy up paths to temporary pdf decpitation paths
+    the function that we call to decapitate the pdf is contained in decapitate_pdf.py.
+    It manages some error handline, and tries to determine whether the pdf
+    cover content has been cleanly removed.
     """
 
     for name in file_title_map.keys():
