@@ -10,8 +10,8 @@ tmp/*
 !tmp/.keepme
 tests/tmp/*
 !tests/tmp/.keepme
-ftp_dir/*
-!ftp_dir/.keepme
+output_dir/*
+!output_dir/.keepme
 tests/ftp_dir/*
 !tests/ftp_dir/.keepme
 decapitate_pdf_dir/*

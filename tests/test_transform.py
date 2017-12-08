@@ -5,18 +5,20 @@ import os
 import zipfile
 from mock import MagicMock, patch
 from packagepoa import transform
+from packagepoa.conf import raw_config, parse_raw_config
 
+POA_CONFIG = parse_raw_config(raw_config('elife'))
 TEST_BASE_PATH = os.path.dirname(os.path.abspath(__file__)) + os.sep
 TEST_DATA_PATH = TEST_BASE_PATH + "test_data" + os.sep
-transform.settings.TMP_DIR = TEST_BASE_PATH + transform.settings.TMP_DIR
-transform.settings.FTP_DIR = TEST_BASE_PATH + transform.settings.FTP_DIR
-transform.settings.DECAPITATE_PDF_DIR = TEST_BASE_PATH + transform.settings.DECAPITATE_PDF_DIR
+POA_CONFIG['tmp_dir'] = TEST_BASE_PATH + POA_CONFIG['tmp_dir']
+POA_CONFIG['output_dir'] = TEST_BASE_PATH + POA_CONFIG['output_dir']
+POA_CONFIG['decapitate_pdf_dir'] = TEST_BASE_PATH + POA_CONFIG['decapitate_pdf_dir']
 
 
 def mock_decapitate_pdf(filename):
     "copy a file to simulate the PDF decapitation process"
     from_filename = os.path.join(TEST_DATA_PATH, filename)
-    to_filename = os.path.join(transform.settings.DECAPITATE_PDF_DIR, filename)
+    to_filename = os.path.join(POA_CONFIG.get('decapitate_pdf_dir'), filename)
     shutil.copy(from_filename, to_filename)
 
 def list_test_dir(dir_name, ignore=('.keepme')):
@@ -32,8 +34,8 @@ def clean_test_dir(dir_name, ignore=('.keepme')):
 
 def clean_test_directories(ignore=('.keepme')):
     "clean each of the testing directories"
-    dir_names = [transform.settings.TMP_DIR, transform.settings.FTP_DIR,
-                 transform.settings.DECAPITATE_PDF_DIR]
+    dir_names = [POA_CONFIG.get('tmp_dir'), POA_CONFIG.get('output_dir'),
+                 POA_CONFIG.get('decapitate_pdf_dir')]
     for dir_name in dir_names:
         clean_test_dir(dir_name, ignore)
 
@@ -52,19 +54,19 @@ class TestTransform(unittest.TestCase):
         fake_decapitate = mock_decapitate_pdf('decap_elife_poa_e12717.pdf')
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        return_value = transform.process_zipfile(zipfile_name)
+        return_value = transform.process_zipfile(zipfile_name, POA_CONFIG)
         # check return value
         self.assertTrue(return_value)
         # check directory contents
-        self.assertEqual(sorted(list_test_dir(transform.settings.TMP_DIR)),
+        self.assertEqual(sorted(list_test_dir(POA_CONFIG.get('tmp_dir'))),
                         ['decap_elife_poa_e12717.pdf', 'elife12717_Supplemental_files.zip',
                          'temp_transfer'])
-        self.assertEqual(sorted(list_test_dir(transform.settings.DECAPITATE_PDF_DIR)),
+        self.assertEqual(sorted(list_test_dir(POA_CONFIG.get('decapitate_pdf_dir'))),
                         ['decap_elife_poa_e12717.pdf'])
-        self.assertEqual(sorted(list_test_dir(transform.settings.FTP_DIR)),
+        self.assertEqual(sorted(list_test_dir(POA_CONFIG.get('output_dir'))),
                         ['elife_poa_e12717.pdf', 'elife_poa_e12717_ds.zip'])
         # check the ds zip contents
-        zip_file_name = os.path.join(transform.settings.FTP_DIR, 'elife_poa_e12717_ds.zip')
+        zip_file_name = os.path.join(POA_CONFIG.get('output_dir'), 'elife_poa_e12717_ds.zip')
         with zipfile.ZipFile(zip_file_name, 'r') as zip_file:
             self.assertEqual(zip_file.namelist(), ['elife12717_Supplemental_files.zip',
                                                    'manifest.xml'])
@@ -78,14 +80,14 @@ class TestTransform(unittest.TestCase):
         fake_decapitate.return_value = False
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        return_value = transform.process_zipfile(zipfile_name)
+        return_value = transform.process_zipfile(zipfile_name, POA_CONFIG)
         # for now it still returns True
         self.assertTrue(return_value)
         # second example returns True but the pdf file is not found in the expected folder
         fake_decapitate.return_value = True
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        return_value = transform.process_zipfile(zipfile_name)
+        return_value = transform.process_zipfile(zipfile_name, POA_CONFIG)
         # for now it still returns True
         self.assertTrue(return_value)
         # clean the test directories
@@ -93,9 +95,9 @@ class TestTransform(unittest.TestCase):
 
     def test_add_file_to_zipfile(self):
         "test adding files to a zip file"
-        zip_file_name = os.path.join(transform.settings.TMP_DIR, 'test.zip')
+        zip_file_name = os.path.join(POA_CONFIG.get('tmp_dir'), 'test.zip')
         zip_file = zipfile.ZipFile(zip_file_name, 'w')
-        file_name =  os.path.join(transform.settings.TMP_DIR, '.keepme')
+        file_name =  os.path.join(POA_CONFIG.get('tmp_dir'), '.keepme')
         # try to add a file not specifying a new name
         transform.add_file_to_zipfile(zip_file, file_name, None)
         self.assertEqual(zip_file.namelist(), [])
