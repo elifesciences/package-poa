@@ -54,7 +54,8 @@ class TestTransform(unittest.TestCase):
         fake_decapitate = mock_decapitate_pdf('decap_elife_poa_e12717.pdf')
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        return_value = transform.process_zipfile(zipfile_name, POA_CONFIG)
+        # pass in the POA_CONFIG which has the testing directories modified
+        return_value = transform.process_zipfile(zipfile_name, None, POA_CONFIG)
         # check return value
         self.assertTrue(return_value)
         # check directory contents
