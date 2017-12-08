@@ -48,84 +48,6 @@ workflow_logger.addHandler(hdlr)
 workflow_logger.setLevel(logging.INFO)
 
 
-class manifestXML(object):
-
-    def __init__(self, doi, new_zipfile, filename_pattern):
-        """
-        set the root node
-        get the article type from the object passed in to the class
-        set default values for items that are boilder plate for this XML
-        """
-
-        self.root = Element('datasupp')
-        self.root.set("sitecode", "elife")
-        self.resource = SubElement(self.root, "resource")
-        self.resource.set("type", "doi")
-        self.resource.text = str(doi)
-
-        self.linktext = SubElement(self.root, "linktext")
-        self.linktext.text = "Supplementary data"
-
-        # Add file elements to the manifest
-        self.simple_manifest(new_zipfile, doi, filename_pattern)
-
-    def simple_manifest(self, new_zipfile, doi, filename_pattern):
-        """
-        Add a simple XML file element to the manifest
-        Note: linktext element must come before title (order matters)
-        """
-        # Filename is the folder inside the zip file
-        filename_text = get_new_internal_zipfile_name(doi, filename_pattern)
-        linktext_text = "Download zip folder"
-        title_text = "Any figures and tables for this article are included in the PDF."
-        title_text += " The zip folder contains additional supplemental files."
-
-        # Add XML
-        self.file = SubElement(self.root, "file")
-        self.filename = SubElement(self.file, "filename")
-        self.filename.text = filename_text
-
-        self.description = SubElement(self.file, "linktext")
-        self.description.text = linktext_text
-
-        self.title = SubElement(self.file, "title")
-        self.title.text = title_text
-
-    def prettyXML(self):
-        publicId = '-//HIGHWIRE//DTD HighWire Data Supplement Manifest//EN'
-        systemId = 'http://schema.highwire.org/public/hwx/ds/datasupplement_manifest.dtd'
-        encoding = 'ISO-8859-1'
-        namespaceURI = None
-        qualifiedName = "datasupp"
-
-        doctype = ElifeDocumentType(qualifiedName)
-        doctype._identified_mixin_init(publicId, systemId)
-
-        rough_string = ElementTree.tostring(self.root, encoding)
-        reparsed = minidom.parseString(rough_string)
-        if doctype:
-            reparsed.insertBefore(doctype, reparsed.documentElement)
-        return reparsed.toprettyxml(indent="\t", encoding=encoding)
-
-class ElifeDocumentType(minidom.DocumentType):
-    """
-    Override minidom.DocumentType in order to get
-    double quotes in the DOCTYPE rather than single quotes
-    """
-    def writexml(self, writer, indent="", addindent="", newl=""):
-        writer.write("<!DOCTYPE ")
-        writer.write(self.name)
-        if self.publicId:
-            writer.write('%s  PUBLIC "%s"%s  "%s"'
-                         % (newl, self.publicId, newl, self.systemId))
-        elif self.systemId:
-            writer.write('%s  SYSTEM "%s"' % (newl, self.systemId))
-        if self.internalSubset is not None:
-            writer.write(" [")
-            writer.write(self.internalSubset)
-            writer.write("]")
-        writer.write(">"+newl)
-
 def article_id_from_doi(doi):
     article_id = doi.split(".")[-1]
     return article_id
@@ -186,20 +108,6 @@ def get_new_zipfile_name(doi, filename_pattern):
         new_zipfile_name = filename_pattern.format(article_id=article_id)
     return new_zipfile_name
 
-def get_new_internal_zipfile_name(doi, filename_pattern):
-    article_id = article_id_from_doi(doi)
-    new_zipfile_folder_name = None
-    if filename_pattern:
-        new_zipfile_folder_name = filename_pattern.format(article_id=article_id)
-    return new_zipfile_folder_name
-
-def gen_new_internal_zipfile(doi, poa_config):
-    filename_pattern = poa_config.get('internal_zipfile_pattern')
-    new_zipfile_name = get_new_internal_zipfile_name(doi, filename_pattern)
-    new_zipfile_name_plus_path = poa_config.get('tmp_dir') + "/" + new_zipfile_name
-    new_zipfile = zipfile.ZipFile(new_zipfile_name_plus_path, 'w')
-    return new_zipfile
-
 def gen_new_zipfile(doi, poa_config):
     filename_pattern = poa_config.get('zipfile_pattern')
     new_zipfile_name = get_new_zipfile_name(doi, filename_pattern)
@@ -214,12 +122,11 @@ def move_files_into_new_zipfile(current_zipfile, file_title_map, new_zipfile, do
         title = file_title_map[name]
         new_name = gen_new_name_for_file(name, title, doi, filename_pattern)
 
-        file = current_zipfile.read(name)
+        file_from_zip = current_zipfile.read(name)
         temp_file_name = poa_config.get('tmp_dir') + "/" + "temp_transfer"
-        f = open(temp_file_name, "wb")
-        f.write(file)
-        f.close()
-        new_zipfile.write(temp_file_name, new_name)
+        with open(temp_file_name, "wb") as file_p:
+            file_p.write(file_from_zip)
+        add_file_to_zipfile(new_zipfile, temp_file_name, new_name)
 
 def add_file_to_zipfile(new_zipfile, name, new_name):
     """
@@ -291,24 +198,12 @@ def remove_pdf_from_file_title_map(file_title_map):
             new_map[name] = title
     return new_map
 
-def generate_hw_manifest(new_zipfile, doi, poa_config):
-    filename_pattern = poa_config.get('internal_zipfile_pattern')
-    manifestObject = manifestXML(doi, new_zipfile, filename_pattern)
-    manifest = manifestObject.prettyXML()
-    return manifest
-
 def move_new_zipfile(doi, poa_config):
     filename_pattern = poa_config.get('zipfile_pattern')
     new_zipfile_name = get_new_zipfile_name(doi, filename_pattern)
     new_zipfile_name_plus_path = poa_config.get('tmp_dir') + "/" + new_zipfile_name
     shutil.move(new_zipfile_name_plus_path, poa_config.get('output_dir') + "/" + new_zipfile_name)
 
-def add_hw_manifest_to_new_zipfile(new_zipfile, hw_manifest, poa_config):
-    temp_file_name = poa_config.get('tmp_dir') + "/" + "temp_transfer"
-    f = open(temp_file_name, "w")
-    f.write(hw_manifest)
-    f.close()
-    new_zipfile.write(temp_file_name, "manifest.xml")
 
 def process_zipfile(zipfile_name, poa_config, config_section=None):
     # configuration
@@ -323,19 +218,11 @@ def process_zipfile(zipfile_name, poa_config, config_section=None):
                                current_zipfile, poa_config)
     pdfless_file_title_map = remove_pdf_from_file_title_map(file_title_map)
 
-    # Internal zip file
-    internal_zipfile = gen_new_internal_zipfile(doi, poa_config)
-    move_files_into_new_zipfile(current_zipfile, pdfless_file_title_map, internal_zipfile, doi,
-                                poa_config)
-    internal_zipfile.close()
-
-    # Outside wrapping zip file
+    # supplements zip file
     new_zipfile = gen_new_zipfile(doi, poa_config)
-    new_name = internal_zipfile.filename.split("/")[-1]
-    add_file_to_zipfile(new_zipfile, internal_zipfile.filename, new_name)
+    move_files_into_new_zipfile(current_zipfile, pdfless_file_title_map, new_zipfile, doi,
+                                poa_config)
 
-    hw_manifest = generate_hw_manifest(new_zipfile, doi, poa_config)
-    add_hw_manifest_to_new_zipfile(new_zipfile, hw_manifest, poa_config)
     # Close zip file before moving
     new_zipfile.close()
     move_new_zipfile(doi, poa_config)
