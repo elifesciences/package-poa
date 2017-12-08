@@ -2,12 +2,12 @@ import zipfile
 import glob
 import logging
 import shutil
+import os
 from xml.dom.minidom import Document
 from collections import namedtuple
 from xml.etree.ElementTree import Element, SubElement, Comment, tostring
 from xml.etree import ElementTree
 from xml.dom import minidom
-import packagepoa.settings as settings
 from packagepoa.decapitate_pdf import decapitate_pdf_with_error_check
 from elifearticle import article as ea
 from conf import raw_config, parse_raw_config
@@ -193,26 +193,29 @@ def get_new_internal_zipfile_name(doi, filename_pattern):
         new_zipfile_folder_name = filename_pattern.format(article_id=article_id)
     return new_zipfile_folder_name
 
-def gen_new_internal_zipfile(doi, filename_pattern):
+def gen_new_internal_zipfile(doi, poa_config):
+    filename_pattern = poa_config.get('internal_zipfile_pattern')
     new_zipfile_name = get_new_internal_zipfile_name(doi, filename_pattern)
-    new_zipfile_name_plus_path = settings.TMP_DIR + "/" + new_zipfile_name
+    new_zipfile_name_plus_path = poa_config.get('tmp_dir') + "/" + new_zipfile_name
     new_zipfile = zipfile.ZipFile(new_zipfile_name_plus_path, 'w')
     return new_zipfile
 
-def gen_new_zipfile(doi, filename_pattern):
+def gen_new_zipfile(doi, poa_config):
+    filename_pattern = poa_config.get('zipfile_pattern')
     new_zipfile_name = get_new_zipfile_name(doi, filename_pattern)
-    new_zipfile_name_plus_path = settings.TMP_DIR + "/" + new_zipfile_name
+    new_zipfile_name_plus_path = poa_config.get('tmp_dir') + "/" + new_zipfile_name
     new_zipfile = zipfile.ZipFile(new_zipfile_name_plus_path, 'w')
     return new_zipfile
 
 def move_files_into_new_zipfile(current_zipfile, file_title_map, new_zipfile, doi,
-                                filename_pattern):
+                                poa_config):
+    filename_pattern = poa_config.get('filename_pattern')
     for name in file_title_map.keys():
         title = file_title_map[name]
         new_name = gen_new_name_for_file(name, title, doi, filename_pattern)
 
         file = current_zipfile.read(name)
-        temp_file_name = settings.TMP_DIR + "/" + "temp_transfer"
+        temp_file_name = poa_config.get('tmp_dir') + "/" + "temp_transfer"
         f = open(temp_file_name, "wb")
         f.write(file)
         f.close()
@@ -226,7 +229,7 @@ def add_file_to_zipfile(new_zipfile, name, new_name):
         return
     new_zipfile.write(name, new_name)
 
-def copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile, config_section):
+def copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile, poa_config):
     """
     we will attempt to generate a headless pdf and move this pdf
     to the ftp staging site.
@@ -241,8 +244,6 @@ def copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile,
 
     TODO: - elife - ianm - tidy up paths to temporary pdf decpitation paths
     """
-    # configuration
-    poa_config = parse_raw_config(raw_config(config_section))
 
     for name in file_title_map.keys():
         # we extract the pdf from the zipfile
@@ -254,21 +255,20 @@ def copy_pdf_to_hw_staging_dir(file_title_map, output_dir, doi, current_zipfile,
             file = current_zipfile.read(name)
             print new_name
             decap_name = "decap_" + new_name
-            decap_name_plus_path = settings.TMP_DIR + "/" + decap_name
+            decap_name_plus_path = poa_config.get('tmp_dir') + "/" + decap_name
             # we save the pdf to a local file
             temp_file = open(decap_name_plus_path, "wb")
             temp_file.write(file)
             temp_file.close()
 
-    if decapitate_pdf_with_error_check(decap_name_plus_path, settings.DECAPITATE_PDF_DIR + "/",
-                                       config_section):
+    if decapitate_pdf_with_error_check(
+        decap_name_plus_path, poa_config.get('decapitate_pdf_dir') + os.sep, poa_config):
         # pass the local file path, and teh path to a temp dir, to the decapiation script
         try:
-            move_file = open(settings.DECAPITATE_PDF_DIR + "/" + decap_name, "rb").read()
-            out_handler = open(output_dir + "/" + new_name, "wb")
+            move_file = open(os.path.join(poa_config.get('decapitate_pdf_dir'), decap_name), "rb").read()
+            out_handler = open(os.path.join(output_dir, new_name), "wb")
             out_handler.write(move_file)
             out_handler.close()
-            print "decapitaiton worked"
         except:
             # The decap may return true but the file does not exist for some reason
             #  allow the transformation to continue in order to processes the supplementary files
@@ -291,49 +291,52 @@ def remove_pdf_from_file_title_map(file_title_map):
             new_map[name] = title
     return new_map
 
-def generate_hw_manifest(new_zipfile, doi, filename_pattern):
+def generate_hw_manifest(new_zipfile, doi, poa_config):
+    filename_pattern = poa_config.get('internal_zipfile_pattern')
     manifestObject = manifestXML(doi, new_zipfile, filename_pattern)
     manifest = manifestObject.prettyXML()
     return manifest
 
-def move_new_zipfile(doi, ftp_dir, filename_pattern):
+def move_new_zipfile(doi, poa_config):
+    filename_pattern = poa_config.get('zipfile_pattern')
     new_zipfile_name = get_new_zipfile_name(doi, filename_pattern)
-    new_zipfile_name_plus_path = settings.TMP_DIR + "/" + new_zipfile_name
-    shutil.move(new_zipfile_name_plus_path, ftp_dir + "/" + new_zipfile_name)
+    new_zipfile_name_plus_path = poa_config.get('tmp_dir') + "/" + new_zipfile_name
+    shutil.move(new_zipfile_name_plus_path, poa_config.get('output_dir') + "/" + new_zipfile_name)
 
-def add_hw_manifest_to_new_zipfile(new_zipfile, hw_manifest):
-    temp_file_name = settings.TMP_DIR + "/" + "temp_transfer"
+def add_hw_manifest_to_new_zipfile(new_zipfile, hw_manifest, poa_config):
+    temp_file_name = poa_config.get('tmp_dir') + "/" + "temp_transfer"
     f = open(temp_file_name, "w")
     f.write(hw_manifest)
     f.close()
     new_zipfile.write(temp_file_name, "manifest.xml")
 
-def process_zipfile(zipfile_name, config_section=None):
+def process_zipfile(zipfile_name, poa_config, config_section=None):
     # configuration
-    poa_config = parse_raw_config(raw_config(config_section))
+    if not poa_config:
+        poa_config = parse_raw_config(raw_config(config_section))
 
     # open the zip file
     current_zipfile = zipfile.ZipFile(zipfile_name, 'r')
     doi = get_doi_from_zipfile(current_zipfile)
     file_title_map = get_filename_new_title_map_from_zipfile(current_zipfile)
-    copy_pdf_to_hw_staging_dir(file_title_map, settings.FTP_DIR, doi,
-                               current_zipfile, config_section)
+    copy_pdf_to_hw_staging_dir(file_title_map, poa_config.get('output_dir'), doi,
+                               current_zipfile, poa_config)
     pdfless_file_title_map = remove_pdf_from_file_title_map(file_title_map)
 
     # Internal zip file
-    internal_zipfile = gen_new_internal_zipfile(doi, poa_config.get('internal_zipfile_pattern'))
+    internal_zipfile = gen_new_internal_zipfile(doi, poa_config)
     move_files_into_new_zipfile(current_zipfile, pdfless_file_title_map, internal_zipfile, doi,
-                                poa_config.get('filename_pattern'))
+                                poa_config)
     internal_zipfile.close()
 
     # Outside wrapping zip file
-    new_zipfile = gen_new_zipfile(doi, poa_config.get('zipfile_pattern'))
+    new_zipfile = gen_new_zipfile(doi, poa_config)
     new_name = internal_zipfile.filename.split("/")[-1]
     add_file_to_zipfile(new_zipfile, internal_zipfile.filename, new_name)
 
-    hw_manifest = generate_hw_manifest(new_zipfile, doi, poa_config.get('internal_zipfile_pattern'))
-    add_hw_manifest_to_new_zipfile(new_zipfile, hw_manifest)
+    hw_manifest = generate_hw_manifest(new_zipfile, doi, poa_config)
+    add_hw_manifest_to_new_zipfile(new_zipfile, hw_manifest, poa_config)
     # Close zip file before moving
     new_zipfile.close()
-    move_new_zipfile(doi, settings.FTP_DIR, poa_config.get('zipfile_pattern'))
+    move_new_zipfile(doi, poa_config)
     return True

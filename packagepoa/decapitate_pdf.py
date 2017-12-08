@@ -14,10 +14,11 @@ h.setFormatter(FORMAT)
 
 logger.addHandler(h)
 
-def decapitate_pdf_with_error_check(pdf_in, pdf_out_dir, config_section=None):
+def decapitate_pdf_with_error_check(pdf_in, pdf_out_dir, poa_config=None):
     # configuration
-    poa_config = parse_raw_config(raw_config(config_section))
-    pdf_executable = poa_config.get('strip_coverletter_executable')
+    pdf_executable = None
+    if poa_config:
+        pdf_executable = poa_config.get('strip_coverletter_executable')
     if not pdf_executable:
         return False
 
