@@ -61,14 +61,11 @@ def get_doi_from_zipfile(ejp_input_zipfile):
     #print ejp_input_zipfile.namelist()
     manifest = ejp_input_zipfile.read("manifest.xml")
     tree = ElementTree.fromstring(manifest)
+    doi = None
     for child in tree:
         if child.tag == "resource":
             if child.attrib["type"] == "doi":
                 doi = child.text
-            elif child.attrib["type"] == "resourceid":
-                doi_base = "10.7554/eLife."
-                article_number = child.text.split("-")[-1]
-                doi = doi_base + article_number
     return doi
 
 def get_filename_new_title_map(ejp_input_zipfile):
@@ -84,6 +81,7 @@ def get_filename_new_title_map(ejp_input_zipfile):
                 if file_tag.tag == "title":
                     title = file_tag.text
             file_title_map[filename] = title
+    manifest_logger.info("file_title_map: " + str(file_title_map))
     return file_title_map
 
 def get_new_zipfile_name(doi, filename_pattern):
@@ -204,7 +202,8 @@ def process_zipfile(zipfile_name, config_section=None, poa_config=None):
     move_files_into_new_zipfile(current_zipfile, pdfless_file_title_map, new_zipfile, doi,
                                 poa_config)
 
-    # Close zip file before moving
+    # Close zip files before moving
     new_zipfile.close()
+    current_zipfile.close()
     move_new_zipfile(doi, poa_config)
     return True
