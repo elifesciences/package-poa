@@ -12,9 +12,6 @@ setup(name='packagepoa',
     packages=['packagepoa'],
     license = 'MIT',
     install_requires=[
-        "elifetools",
-        "elifearticle",
-        "GitPython",
         "configparser"
     ],
     url='https://github.com/elifesciences/package-poa',

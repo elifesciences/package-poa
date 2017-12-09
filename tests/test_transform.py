@@ -1,9 +1,8 @@
 import unittest
-import time
 import shutil
 import os
 import zipfile
-from mock import MagicMock, patch
+from mock import patch
 from packagepoa import transform
 from packagepoa.conf import raw_config, parse_raw_config
 
@@ -51,7 +50,8 @@ class TestTransform(unittest.TestCase):
 
     @patch.object(transform, 'decapitate_pdf_with_error_check')
     def test_process_zipfile(self, fake_decapitate):
-        fake_decapitate = mock_decapitate_pdf('decap_elife_poa_e12717.pdf')
+        mock_decapitate_pdf('decap_elife_poa_e12717.pdf')
+        fake_decapitate.return_value = True
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
         # pass in the POA_CONFIG which has the testing directories modified
@@ -60,11 +60,11 @@ class TestTransform(unittest.TestCase):
         self.assertTrue(return_value)
         # check directory contents
         self.assertEqual(sorted(list_test_dir(POA_CONFIG.get('tmp_dir'))),
-                        ['decap_elife_poa_e12717.pdf', 'temp_transfer'])
+                         ['decap_elife_poa_e12717.pdf', 'temp_transfer'])
         self.assertEqual(sorted(list_test_dir(POA_CONFIG.get('decapitate_pdf_dir'))),
-                        ['decap_elife_poa_e12717.pdf'])
+                         ['decap_elife_poa_e12717.pdf'])
         self.assertEqual(sorted(list_test_dir(POA_CONFIG.get('output_dir'))),
-                        ['elife_poa_e12717.pdf', 'elife_poa_e12717_ds.zip'])
+                         ['elife_poa_e12717.pdf', 'elife_poa_e12717_ds.zip'])
         # check the ds zip contents
         zip_file_name = os.path.join(POA_CONFIG.get('output_dir'), 'elife_poa_e12717_ds.zip')
         with zipfile.ZipFile(zip_file_name, 'r') as zip_file:
@@ -123,7 +123,7 @@ class TestTransform(unittest.TestCase):
         "test adding files to a zip file"
         zip_file_name = os.path.join(POA_CONFIG.get('tmp_dir'), 'test.zip')
         zip_file = zipfile.ZipFile(zip_file_name, 'w')
-        file_name =  os.path.join(POA_CONFIG.get('tmp_dir'), '.keepme')
+        file_name = os.path.join(POA_CONFIG.get('tmp_dir'), '.keepme')
         # try to add a file not specifying a new name
         transform.add_file_to_zipfile(zip_file, file_name, None)
         self.assertEqual(zip_file.namelist(), [])
