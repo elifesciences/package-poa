@@ -136,10 +136,10 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
         title = file_title_map[name]
 
         if title == "Merged PDF":
-            print title
+            logger.info("title: " + str(title))
             new_name = gen_new_name_for_file(name, title, doi, poa_config.get('filename_pattern'))
             file_from_zip = current_zipfile.read(name)
-            print new_name
+            logger.info("new_name: " + str(new_name))
             decap_name = "decap_" + new_name
             decap_name_plus_path = poa_config.get('tmp_dir') + "/" + decap_name
             # we save the pdf to a local file
@@ -151,11 +151,13 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
             decap_name_plus_path, poa_config.get('decapitate_pdf_dir') + os.sep, poa_config):
         # pass the local file path, and teh path to a temp dir, to the decapiation script
         try:
-            move_file = open(
-                os.path.join(poa_config.get('decapitate_pdf_dir'), decap_name), "rb").read()
-            out_handler = open(os.path.join(output_dir, new_name), "wb")
-            out_handler.write(move_file)
-            out_handler.close()
+            file_content = None
+            with open(
+                os.path.join(poa_config.get('decapitate_pdf_dir'), decap_name), "rb") as open_file:
+                file_content = open_file.read()
+            if file_content:
+                with open(os.path.join(output_dir, new_name), "wb") as out_handler:
+                    out_handler.write(file_content)
         except IOError:
             # The decap may return true but the file does not exist for some reason
             #  allow the transformation to continue in order to processes the supplementary files

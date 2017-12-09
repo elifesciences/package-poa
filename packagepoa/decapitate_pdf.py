@@ -1,3 +1,4 @@
+from __future__ import print_function
 import logging
 import subprocess
 
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     import sys
     args = sys.argv[1:]
     if len(args) < 2:
-        print 'Usage: decapitate_pdf.py <pdf-in> <pdf-out>'
+        print('Usage: decapitate_pdf.py <pdf-in> <pdf-out>')
         exit(1)
 
     h2 = logging.StreamHandler()
