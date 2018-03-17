@@ -154,12 +154,12 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
         # pass the local file path, and the path to a temp dir, to the decapitation script
         decap_status = func_timeout(
             PDF_DECAPITATE_TIMEOUT, decapitate_pdf_with_error_check, args=(
-            decap_name_plus_path, poa_config.get('decapitate_pdf_dir') + os.sep, poa_config))
+                decap_name_plus_path, poa_config.get('decapitate_pdf_dir') + os.sep, poa_config))
     except FunctionTimedOut:
         decap_status = False
         timeout_message = "PDF decap did not finish within {x} seconds".format(x=PDF_DECAPITATE_TIMEOUT)
         logger.error(timeout_message)
-    
+
     if decap_status:
         # pass the local file path, and teh path to a temp dir, to the decapiation script
         try:
