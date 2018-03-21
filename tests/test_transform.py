@@ -124,20 +124,17 @@ class TestTransform(unittest.TestCase):
     @patch.object(transform, 'decapitate_pdf_with_error_check')
     def test_copy_pdf_to_output_dir_timed_out_pdf(self, fake_decapitate):
         "tests of when pdf decapitaion reaches timeout"
-        # override the timeout value with 0 seconds to simulate a timeout
-        transform.PDF_DECAPITATE_TIMEOUT = -1
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
         file_title_map = {
             '18022_1_merged_1463214271.pdf': 'Merged PDF'
         }
+        fake_decapitate.side_effect = FunctionTimedOut
         doi = '10.7554/eLife.12717'
         with zipfile.ZipFile(zipfile_name, 'r') as current_zipfile:
             with self.assertRaises(Exception) as context:
                 return_value = transform.copy_pdf_to_output_dir(file_title_map, None, doi,
                                                                 current_zipfile, POA_CONFIG)
-        # set the timed out value back again
-        transform.PDF_DECAPITATE_TIMEOUT = 120
         clean_test_directories()
 
 
