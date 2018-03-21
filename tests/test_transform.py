@@ -132,8 +132,8 @@ class TestTransform(unittest.TestCase):
             '18022_1_merged_1463214271.pdf': 'Merged PDF'
         }
         doi = '10.7554/eLife.12717'
-        with self.assertRaises(Exception) as context:
-            with zipfile.ZipFile(zipfile_name, 'r') as current_zipfile:
+        with zipfile.ZipFile(zipfile_name, 'r') as current_zipfile:
+            with self.assertRaises(Exception) as context:
                 return_value = transform.copy_pdf_to_output_dir(file_title_map, None, doi,
                                                                 current_zipfile, POA_CONFIG)
         # set the timed out value back again
