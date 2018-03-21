@@ -125,7 +125,7 @@ class TestTransform(unittest.TestCase):
     def test_copy_pdf_to_output_dir_timed_out_pdf(self, fake_decapitate):
         "tests of when pdf decapitaion reaches timeout"
         # override the timeout value with 0 seconds to simulate a timeout
-        transform.PDF_DECAPITATE_TIMEOUT = 0
+        transform.PDF_DECAPITATE_TIMEOUT = -1
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
         file_title_map = {
