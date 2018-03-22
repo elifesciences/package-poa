@@ -13,6 +13,7 @@ import logging
 import shutil
 import os
 from xml.etree import ElementTree
+from func_timeout import func_timeout, FunctionTimedOut
 from packagepoa.decapitate_pdf import decapitate_pdf_with_error_check
 from packagepoa.conf import raw_config, parse_raw_config
 
@@ -31,6 +32,7 @@ formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 hdlr.setFormatter(formatter)
 manifest_logger.addHandler(hdlr)
 manifest_logger.setLevel(logging.INFO)
+PDF_DECAPITATE_TIMEOUT = 120
 
 
 def article_id_from_doi(doi):
@@ -147,8 +149,18 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
             temp_file.write(file_from_zip)
             temp_file.close()
 
-    if decapitate_pdf_with_error_check(
-            decap_name_plus_path, poa_config.get('decapitate_pdf_dir') + os.sep, poa_config):
+    decap_status = None
+    try:
+        # pass the local file path, and the path to a temp dir, to the decapitation script
+        decap_status = func_timeout(
+            PDF_DECAPITATE_TIMEOUT, decapitate_pdf_with_error_check, args=(
+                decap_name_plus_path, poa_config.get('decapitate_pdf_dir') + os.sep, poa_config))
+    except FunctionTimedOut:
+        decap_status = False
+        timeout_message = "PDF decap did not finish within {x} seconds".format(x=PDF_DECAPITATE_TIMEOUT)
+        logger.error(timeout_message)
+
+    if decap_status:
         # pass the local file path, and teh path to a temp dir, to the decapiation script
         try:
             file_content = None

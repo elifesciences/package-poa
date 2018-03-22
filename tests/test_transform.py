@@ -3,6 +3,7 @@ import shutil
 import os
 import zipfile
 from mock import patch
+from func_timeout import FunctionTimedOut
 from packagepoa import transform
 from packagepoa.conf import raw_config, parse_raw_config
 
@@ -118,6 +119,24 @@ class TestTransform(unittest.TestCase):
         self.assertTrue(return_value)
         # clean the test directories
         clean_test_directories()
+
+
+    @patch.object(transform, 'decapitate_pdf_with_error_check')
+    def test_copy_pdf_to_output_dir_timed_out_pdf(self, fake_decapitate):
+        "tests of when pdf decapitaion reaches timeout"
+        zipfile_name = os.path.join(TEST_DATA_PATH,
+                                    '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
+        file_title_map = {
+            '18022_1_merged_1463214271.pdf': 'Merged PDF'
+        }
+        fake_decapitate.side_effect = FunctionTimedOut
+        doi = '10.7554/eLife.12717'
+        with zipfile.ZipFile(zipfile_name, 'r') as current_zipfile:
+            with self.assertRaises(Exception) as context:
+                return_value = transform.copy_pdf_to_output_dir(file_title_map, None, doi,
+                                                                current_zipfile, POA_CONFIG)
+        clean_test_directories()
+
 
     def test_add_file_to_zipfile(self):
         "test adding files to a zip file"
