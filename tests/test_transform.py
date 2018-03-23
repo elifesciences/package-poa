@@ -97,8 +97,6 @@ class TestTransform(unittest.TestCase):
                 'elife_poa_e12717_Video_7.mov',
                 'elife_poa_e12717_Video_8.mov',
                 'elife_poa_e12717_Video_9.mov'])
-        # clean the test directories
-        clean_test_directories()
 
     @patch.object(transform, 'decapitate_pdf_with_error_check')
     def test_process_zipfile_failed_pdf(self, fake_decapitate):
@@ -117,8 +115,6 @@ class TestTransform(unittest.TestCase):
         return_value = transform.process_zipfile(zipfile_name, None, None)
         # for now it still returns True
         self.assertTrue(return_value)
-        # clean the test directories
-        clean_test_directories()
 
 
     @patch.object(transform, 'decapitate_pdf_with_error_check')
@@ -135,7 +131,6 @@ class TestTransform(unittest.TestCase):
             with self.assertRaises(Exception) as context:
                 return_value = transform.copy_pdf_to_output_dir(file_title_map, None, doi,
                                                                 current_zipfile, POA_CONFIG)
-        clean_test_directories()
 
 
     def test_add_file_to_zipfile(self):
@@ -144,11 +139,9 @@ class TestTransform(unittest.TestCase):
         zip_file = zipfile.ZipFile(zip_file_name, 'w')
         file_name = os.path.join(POA_CONFIG.get('tmp_dir'), '.keepme')
         # try to add a file not specifying a new name
-        transform.add_file_to_zipfile(zip_file, file_name, None)
-        self.assertEqual(zip_file.namelist(), [])
-        # clean the test directories
-        zip_file.close()
-        clean_test_directories()
+        with zipfile.ZipFile(zip_file_name, 'w') as zip_file:
+            transform.add_file_to_zipfile(zip_file, file_name, None)
+            self.assertEqual(zip_file.namelist(), [])
 
 if __name__ == '__main__':
     unittest.main()
