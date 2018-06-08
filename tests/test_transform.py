@@ -56,7 +56,7 @@ class TestTransform(unittest.TestCase):
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
         # pass in the POA_CONFIG which has the testing directories modified
-        return_value = transform.process_zipfile(zipfile_name, None, POA_CONFIG)
+        return_value = transform.process_zipfile(zipfile_name, POA_CONFIG)
         # check return value
         self.assertTrue(return_value)
         # check directory contents
@@ -105,14 +105,14 @@ class TestTransform(unittest.TestCase):
         fake_decapitate.return_value = False
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        return_value = transform.process_zipfile(zipfile_name, None, None)
+        return_value = transform.process_zipfile(zipfile_name, None)
         # for now it still returns True
         self.assertTrue(return_value)
         # second example returns True but the pdf file is not found in the expected folder
         fake_decapitate.return_value = True
         zipfile_name = os.path.join(TEST_DATA_PATH,
                                     '18022_1_supp_mat_highwire_zip_268991_x75s4v.zip')
-        return_value = transform.process_zipfile(zipfile_name, None, None)
+        return_value = transform.process_zipfile(zipfile_name, None)
         # for now it still returns True
         self.assertTrue(return_value)
 

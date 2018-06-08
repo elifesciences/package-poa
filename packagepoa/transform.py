@@ -198,10 +198,10 @@ def move_new_zipfile(doi, poa_config):
     shutil.move(new_zipfile_name_plus_path, poa_config.get('output_dir') + "/" + new_zipfile_name)
 
 
-def process_zipfile(zipfile_name, config_section=None, poa_config=None):
+def process_zipfile(zipfile_name, poa_config=None):
     # configuration can be passed in or parsed from the config_section
     if not poa_config:
-        poa_config = parse_raw_config(raw_config(config_section))
+        poa_config = parse_raw_config(raw_config(None))
 
     # open the zip file
     current_zipfile = zipfile.ZipFile(zipfile_name, 'r')
