@@ -1,16 +1,18 @@
 from setuptools import setup
-
 import packagepoa
 
-with open('README.rst') as fp:
-    readme = fp.read()
 
-setup(name='packagepoa',
+with open('README.rst') as fp:
+    README = fp.read()
+
+
+setup(
+    name='packagepoa',
     version=packagepoa.__version__,
     description='Generate, transform and assemble files for a PoA article.',
-    long_description=readme,
+    long_description=README,
     packages=['packagepoa'],
-    license = 'MIT',
+    license='MIT',
     install_requires=[
         "configparser"
     ],
