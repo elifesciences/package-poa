@@ -128,6 +128,52 @@ def add_file_to_zipfile(new_zipfile, name, new_name):
     new_zipfile.write(name, new_name)
 
 
+def extract_pdf_from_zip(name, current_zipfile, decap_name, poa_config):
+    # we extract the pdf from the zipfile
+    file_from_zip = current_zipfile.read(name)
+    decap_name_plus_path = poa_config.get('tmp_dir') + "/" + decap_name
+    # we save the pdf to a local file
+    with open(decap_name_plus_path, "wb") as temp_file:
+        temp_file.write(file_from_zip)
+    return decap_name_plus_path
+
+
+def pdf_new_name(pdf_name, title, doi, poa_config):
+    new_name = gen_new_name_for_file(pdf_name, title, doi, poa_config.get('filename_pattern'))
+    LOGGER.info("new_name: %s", new_name)
+    return new_name
+
+
+def pdf_decap_name(new_name):
+    return "decap_" + new_name
+
+
+def pdf_details(file_title_map):
+    "find the PDF file name in the zip file map"
+    pdf_name = None
+    title = None
+    for name in file_title_map.keys():
+        file_title = file_title_map[name]
+        if file_title == "Merged PDF":
+            LOGGER.info("title: %s", title)
+            pdf_name = name
+            title = file_title
+    return pdf_name, title
+
+
+def decap_the_pdf(decap_name_plus_path, poa_config):
+    decap_status = None
+    try:
+        # pass the local file path, and the path to a temp dir, to the decapitation script
+        decap_status = func_timeout(
+            PDF_DECAPITATE_TIMEOUT, decapitate_pdf_with_error_check, args=(
+                decap_name_plus_path, poa_config.get('decapitate_pdf_dir') + os.sep, poa_config))
+    except FunctionTimedOut:
+        decap_status = False
+        LOGGER.error("PDF decap did not finish within %s seconds", PDF_DECAPITATE_TIMEOUT)
+    return decap_status
+
+
 def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa_config):
     """
     we will attempt to generate a headless pdf and move this pdf
@@ -140,33 +186,13 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
     cover content has been cleanly removed.
     """
 
-    for name in file_title_map.keys():
-        # we extract the pdf from the zipfile
-        title = file_title_map[name]
+    name, title = pdf_details(file_title_map)
+    new_name = pdf_new_name(name, title, doi, poa_config)
+    decap_name = pdf_decap_name(new_name)
+    decap_name_plus_path = extract_pdf_from_zip(
+        name, current_zipfile, decap_name, poa_config)
 
-        if title == "Merged PDF":
-            LOGGER.info("title: %s", title)
-            new_name = gen_new_name_for_file(name, title, doi, poa_config.get('filename_pattern'))
-            file_from_zip = current_zipfile.read(name)
-            LOGGER.info("new_name: %s", new_name)
-            decap_name = "decap_" + new_name
-            decap_name_plus_path = poa_config.get('tmp_dir') + "/" + decap_name
-            # we save the pdf to a local file
-            temp_file = open(decap_name_plus_path, "wb")
-            temp_file.write(file_from_zip)
-            temp_file.close()
-
-    decap_status = None
-    try:
-        # pass the local file path, and the path to a temp dir, to the decapitation script
-        decap_status = func_timeout(
-            PDF_DECAPITATE_TIMEOUT, decapitate_pdf_with_error_check, args=(
-                decap_name_plus_path, poa_config.get('decapitate_pdf_dir') + os.sep, poa_config))
-    except FunctionTimedOut:
-        decap_status = False
-        timeout_message = "PDF decap did not finish within {x} seconds".format(
-            x=PDF_DECAPITATE_TIMEOUT)
-        LOGGER.error(timeout_message)
+    decap_status = decap_the_pdf(decap_name_plus_path, poa_config)
 
     if decap_status:
         # pass the local file path, and the path to a temp dir, to the decapiation script
@@ -181,12 +207,10 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
         except IOError:
             # The decap may return true but the file does not exist for some reason
             #  allow the transformation to continue in order to processes the supplementary files
-            alert_message = "decap returned true but the pdf file is missing " + new_name
-            LOGGER.error(alert_message)
+            LOGGER.error("decap returned true but the pdf file is missing %s", new_name)
     else:
         # if the decapitation script has failed
-        alert_message = "could not decapitate " + new_name
-        LOGGER.error(alert_message)
+        LOGGER.error("could not decapitate %s", new_name)
 
 
 def remove_pdf_from_file_title_map(file_title_map):
