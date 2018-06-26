@@ -18,26 +18,26 @@ from packagepoa.decapitate_pdf import decapitate_pdf_with_error_check
 from packagepoa.conf import raw_config, parse_raw_config
 
 # local logger
-logger = logging.getLogger('transform')
-hdlr = logging.FileHandler('transform.log')
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-hdlr.setFormatter(formatter)
-logger.addHandler(hdlr)
-logger.setLevel(logging.INFO)
+LOGGER = logging.getLogger('transform')
+HDLR = logging.FileHandler('transform.log')
+FORMATTER = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+HDLR.setFormatter(FORMATTER)
+LOGGER.addHandler(HDLR)
+LOGGER.setLevel(logging.INFO)
 
 # global logger
-manifest_logger = logging.getLogger('manifest')
-hdlr = logging.FileHandler('manifest.log')
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-hdlr.setFormatter(formatter)
-manifest_logger.addHandler(hdlr)
-manifest_logger.setLevel(logging.INFO)
+MANIFEST_LOGGER = logging.getLogger('manifest')
+MANIFEST_HDLR = logging.FileHandler('manifest.log')
+MANIFEST_HDLR.setFormatter(FORMATTER)
+MANIFEST_LOGGER.addHandler(MANIFEST_HDLR)
+MANIFEST_LOGGER.setLevel(logging.INFO)
 PDF_DECAPITATE_TIMEOUT = 120
 
 
 def article_id_from_doi(doi):
     article_id = doi.split(".")[-1]
     return article_id
+
 
 def gen_new_name_for_file(name, title, doi, filename_pattern):
     """
@@ -59,8 +59,9 @@ def gen_new_name_for_file(name, title, doi, filename_pattern):
             article_id=article_id, extra='_' + new_name_front, file_ext=file_ext)
     return new_name
 
+
 def get_doi_from_zipfile(ejp_input_zipfile):
-    #print ejp_input_zipfile.namelist()
+    # print ejp_input_zipfile.namelist()
     manifest = ejp_input_zipfile.read("manifest.xml")
     tree = ElementTree.fromstring(manifest)
     doi = None
@@ -70,8 +71,9 @@ def get_doi_from_zipfile(ejp_input_zipfile):
                 doi = child.text
     return doi
 
+
 def get_filename_new_title_map(ejp_input_zipfile):
-    manifest_logger.info("unpacking and renaming " + str(ejp_input_zipfile.filename))
+    MANIFEST_LOGGER.info("unpacking and renaming %s", ejp_input_zipfile.filename)
     file_title_map = {}
     manifest = ejp_input_zipfile.read("manifest.xml")
     tree = ElementTree.fromstring(manifest)
@@ -83,8 +85,9 @@ def get_filename_new_title_map(ejp_input_zipfile):
                 if file_tag.tag == "title":
                     title = file_tag.text
             file_title_map[filename] = title
-    manifest_logger.info("file_title_map: " + str(file_title_map))
+    MANIFEST_LOGGER.info("file_title_map: %s", file_title_map)
     return file_title_map
+
 
 def get_new_zipfile_name(doi, filename_pattern):
     article_id = article_id_from_doi(doi)
@@ -93,12 +96,14 @@ def get_new_zipfile_name(doi, filename_pattern):
         new_zipfile_name = filename_pattern.format(article_id=article_id)
     return new_zipfile_name
 
+
 def gen_new_zipfile(doi, poa_config):
     filename_pattern = poa_config.get('zipfile_pattern')
     new_zipfile_name = get_new_zipfile_name(doi, filename_pattern)
     new_zipfile_name_plus_path = poa_config.get('tmp_dir') + "/" + new_zipfile_name
     new_zipfile = zipfile.ZipFile(new_zipfile_name_plus_path, 'w')
     return new_zipfile
+
 
 def move_files_into_new_zipfile(current_zipfile, file_title_map, new_zipfile, doi,
                                 poa_config):
@@ -113,6 +118,7 @@ def move_files_into_new_zipfile(current_zipfile, file_title_map, new_zipfile, do
             file_p.write(file_from_zip)
         add_file_to_zipfile(new_zipfile, temp_file_name, new_name)
 
+
 def add_file_to_zipfile(new_zipfile, name, new_name):
     """
     Simple add a file to a zip file
@@ -120,6 +126,7 @@ def add_file_to_zipfile(new_zipfile, name, new_name):
     if not new_zipfile or not name or not new_name:
         return
     new_zipfile.write(name, new_name)
+
 
 def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa_config):
     """
@@ -138,10 +145,10 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
         title = file_title_map[name]
 
         if title == "Merged PDF":
-            logger.info("title: " + str(title))
+            LOGGER.info("title: %s", title)
             new_name = gen_new_name_for_file(name, title, doi, poa_config.get('filename_pattern'))
             file_from_zip = current_zipfile.read(name)
-            logger.info("new_name: " + str(new_name))
+            LOGGER.info("new_name: %s", new_name)
             decap_name = "decap_" + new_name
             decap_name_plus_path = poa_config.get('tmp_dir') + "/" + decap_name
             # we save the pdf to a local file
@@ -157,15 +164,16 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
                 decap_name_plus_path, poa_config.get('decapitate_pdf_dir') + os.sep, poa_config))
     except FunctionTimedOut:
         decap_status = False
-        timeout_message = "PDF decap did not finish within {x} seconds".format(x=PDF_DECAPITATE_TIMEOUT)
-        logger.error(timeout_message)
+        timeout_message = "PDF decap did not finish within {x} seconds".format(
+            x=PDF_DECAPITATE_TIMEOUT)
+        LOGGER.error(timeout_message)
 
     if decap_status:
-        # pass the local file path, and teh path to a temp dir, to the decapiation script
+        # pass the local file path, and the path to a temp dir, to the decapiation script
         try:
             file_content = None
-            with open(
-                os.path.join(poa_config.get('decapitate_pdf_dir'), decap_name), "rb") as open_file:
+            pdf_file_name = os.path.join(poa_config.get('decapitate_pdf_dir'), decap_name)
+            with open(pdf_file_name, "rb") as open_file:
                 file_content = open_file.read()
             if file_content:
                 with open(os.path.join(output_dir, new_name), "wb") as out_handler:
@@ -174,11 +182,11 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
             # The decap may return true but the file does not exist for some reason
             #  allow the transformation to continue in order to processes the supplementary files
             alert_message = "decap returned true but the pdf file is missing " + new_name
-            logger.error(alert_message)
+            LOGGER.error(alert_message)
     else:
         # if the decapitation script has failed
         alert_message = "could not decapitate " + new_name
-        logger.error(alert_message)
+        LOGGER.error(alert_message)
 
 
 def remove_pdf_from_file_title_map(file_title_map):
@@ -190,6 +198,7 @@ def remove_pdf_from_file_title_map(file_title_map):
         else:
             new_map[name] = title
     return new_map
+
 
 def move_new_zipfile(doi, poa_config):
     filename_pattern = poa_config.get('zipfile_pattern')
