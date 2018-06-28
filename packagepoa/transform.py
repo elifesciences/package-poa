@@ -108,7 +108,7 @@ def gen_new_zipfile(doi, poa_config):
 def move_files_into_new_zipfile(current_zipfile, file_title_map, new_zipfile, doi,
                                 poa_config):
     filename_pattern = poa_config.get('filename_pattern')
-    for name in file_title_map.keys():
+    for name in file_title_map:
         title = file_title_map[name]
         new_name = gen_new_name_for_file(name, title, doi, filename_pattern)
 
@@ -152,7 +152,7 @@ def pdf_details(file_title_map):
     "find the PDF file name in the zip file map"
     pdf_name = None
     title = None
-    for name in file_title_map.keys():
+    for name in file_title_map:
         file_title = file_title_map[name]
         if file_title == "Merged PDF":
             LOGGER.info("title: %s", title)
@@ -215,7 +215,7 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
 
 def remove_pdf_from_file_title_map(file_title_map):
     new_map = {}
-    for name in file_title_map.keys():
+    for name in file_title_map:
         title = file_title_map[name]
         if title == "Merged PDF":
             continue
