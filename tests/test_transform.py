@@ -21,16 +21,19 @@ def mock_decapitate_pdf(filename):
     to_filename = os.path.join(POA_CONFIG.get('decapitate_pdf_dir'), filename)
     shutil.copy(from_filename, to_filename)
 
+
 def list_test_dir(dir_name, ignore=('.keepme')):
     "list the contents of a directory ignoring the ignore files"
     file_names = os.listdir(dir_name)
     return [file_name for file_name in file_names if file_name not in ignore]
+
 
 def clean_test_dir(dir_name, ignore=('.keepme')):
     "clean files from a test directory ignoring the .keepme file"
     file_names = list_test_dir(dir_name, ignore)
     for file_name in file_names:
         os.remove(os.path.join(dir_name, file_name))
+
 
 def clean_test_directories(ignore=('.keepme')):
     "clean each of the testing directories"
@@ -116,7 +119,6 @@ class TestTransform(unittest.TestCase):
         # for now it still returns True
         self.assertTrue(return_value)
 
-
     @patch.object(transform, 'decapitate_pdf_with_error_check')
     def test_copy_pdf_to_output_dir_timed_out_pdf(self, fake_decapitate):
         "tests of when pdf decapitaion reaches timeout"
@@ -128,10 +130,9 @@ class TestTransform(unittest.TestCase):
         fake_decapitate.side_effect = FunctionTimedOut
         doi = '10.7554/eLife.12717'
         with zipfile.ZipFile(zipfile_name, 'r') as current_zipfile:
-            with self.assertRaises(Exception) as context:
-                return_value = transform.copy_pdf_to_output_dir(file_title_map, None, doi,
-                                                                current_zipfile, POA_CONFIG)
-
+            with self.assertRaises(Exception):
+                transform.copy_pdf_to_output_dir(file_title_map, None, doi,
+                                                 current_zipfile, POA_CONFIG)
 
     def test_add_file_to_zipfile(self):
         "test adding files to a zip file"
@@ -142,6 +143,7 @@ class TestTransform(unittest.TestCase):
         with zipfile.ZipFile(zip_file_name, 'w') as zip_file:
             transform.add_file_to_zipfile(zip_file, file_name, None)
             self.assertEqual(zip_file.namelist(), [])
+
 
 if __name__ == '__main__':
     unittest.main()
