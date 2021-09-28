@@ -1,9 +1,7 @@
 #!/bin/bash
 set -e
-
-virtualenv venv
+. mkvenv.sh
 source venv/bin/activate
+pip install coveralls wheel pip pytest --upgrade
 pip install -r requirements.txt
-pip install coveralls
-coverage run -m unittest discover tests
-COVERALLS_REPO_TOKEN=$(cat /etc/coveralls/tokens/package-poa) coveralls
+coverage run -m pytest
