@@ -2,7 +2,9 @@ from __future__ import print_function
 import logging
 import subprocess
 
-FORMAT = logging.Formatter("%(created)f - %(levelname)s - %(processName)s - %(name)s - %(message)s")
+FORMAT = logging.Formatter(
+    "%(created)f - %(levelname)s - %(processName)s - %(name)s - %(message)s"
+)
 LOGFILE = "decapitate_pdf.log"
 LOGGER = logging.getLogger(__file__)
 LOGGER.setLevel(logging.DEBUG)
@@ -18,17 +20,18 @@ def decapitate_pdf_with_error_check(pdf_in, pdf_out_dir, poa_config=None):
     # configuration
     pdf_executable = None
     if poa_config:
-        pdf_executable = poa_config.get('strip_coverletter_executable')
+        pdf_executable = poa_config.get("strip_coverletter_executable")
     if not pdf_executable:
         return False
 
     # PDF out file name
-    pdf_out = pdf_out_dir + pdf_in.split('/')[-1]
+    pdf_out = pdf_out_dir + pdf_in.split("/")[-1]
 
     process = subprocess.Popen(
         [pdf_executable, pdf_in, pdf_out],
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE)
+        stderr=subprocess.PIPE,
+    )
 
     stderr = process.stderr.read()
     stdout = process.stdout.read()
@@ -38,14 +41,15 @@ def decapitate_pdf_with_error_check(pdf_in, pdf_out_dir, poa_config=None):
     map(LOGGER.info, stdout.splitlines())
     map(LOGGER.error, stderr.splitlines())
 
-    return stderr != ''  # no errors
+    return stderr != ""  # no errors
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     ARGS = sys.argv[1:]
     if len(ARGS) < 2:
-        print('Usage: decapitate_pdf.py <pdf-in> <pdf-out>')
+        print("Usage: decapitate_pdf.py <pdf-in> <pdf-out>")
         exit(1)
 
     HANDLER = logging.StreamHandler()
@@ -55,5 +59,5 @@ if __name__ == '__main__':
 
     PIN = ARGS[0]
     POUT = ARGS[1]
-    CONFIG = {'strip_coverletter_executable': PDF_EXECUTABLE_DEFAULT}
+    CONFIG = {"strip_coverletter_executable": PDF_EXECUTABLE_DEFAULT}
     decapitate_pdf_with_error_check(PIN, POUT, CONFIG)

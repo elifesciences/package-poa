@@ -18,16 +18,16 @@ from packagepoa.decapitate_pdf import decapitate_pdf_with_error_check
 from packagepoa.conf import raw_config, parse_raw_config
 
 # local logger
-LOGGER = logging.getLogger('transform')
-HDLR = logging.FileHandler('transform.log')
-FORMATTER = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+LOGGER = logging.getLogger("transform")
+HDLR = logging.FileHandler("transform.log")
+FORMATTER = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
 HDLR.setFormatter(FORMATTER)
 LOGGER.addHandler(HDLR)
 LOGGER.setLevel(logging.INFO)
 
 # global logger
-MANIFEST_LOGGER = logging.getLogger('manifest')
-MANIFEST_HDLR = logging.FileHandler('manifest.log')
+MANIFEST_LOGGER = logging.getLogger("manifest")
+MANIFEST_HDLR = logging.FileHandler("manifest.log")
 MANIFEST_HDLR.setFormatter(FORMATTER)
 MANIFEST_LOGGER.addHandler(MANIFEST_HDLR)
 MANIFEST_LOGGER.setLevel(logging.INFO)
@@ -53,10 +53,12 @@ def gen_new_name_for_file(name, title, doi, filename_pattern):
     if new_name_front == "Merged_PDF":
         # we ignore the main file name and just use our base POA convention
         new_name = filename_pattern.format(
-            article_id=article_id, extra='', file_ext=file_ext)
+            article_id=article_id, extra="", file_ext=file_ext
+        )
     else:
         new_name = filename_pattern.format(
-            article_id=article_id, extra='_' + new_name_front, file_ext=file_ext)
+            article_id=article_id, extra="_" + new_name_front, file_ext=file_ext
+        )
     return new_name
 
 
@@ -98,22 +100,23 @@ def get_new_zipfile_name(doi, filename_pattern):
 
 
 def gen_new_zipfile(doi, poa_config):
-    filename_pattern = poa_config.get('zipfile_pattern')
+    filename_pattern = poa_config.get("zipfile_pattern")
     new_zipfile_name = get_new_zipfile_name(doi, filename_pattern)
-    new_zipfile_name_plus_path = poa_config.get('tmp_dir') + "/" + new_zipfile_name
-    new_zipfile = zipfile.ZipFile(new_zipfile_name_plus_path, 'w')
+    new_zipfile_name_plus_path = poa_config.get("tmp_dir") + "/" + new_zipfile_name
+    new_zipfile = zipfile.ZipFile(new_zipfile_name_plus_path, "w")
     return new_zipfile
 
 
-def move_files_into_new_zipfile(current_zipfile, file_title_map, new_zipfile, doi,
-                                poa_config):
-    filename_pattern = poa_config.get('filename_pattern')
+def move_files_into_new_zipfile(
+    current_zipfile, file_title_map, new_zipfile, doi, poa_config
+):
+    filename_pattern = poa_config.get("filename_pattern")
     for name in file_title_map:
         title = file_title_map[name]
         new_name = gen_new_name_for_file(name, title, doi, filename_pattern)
 
         file_from_zip = current_zipfile.read(name)
-        temp_file_name = poa_config.get('tmp_dir') + "/" + "temp_transfer"
+        temp_file_name = poa_config.get("tmp_dir") + "/" + "temp_transfer"
         with open(temp_file_name, "wb") as file_p:
             file_p.write(file_from_zip)
         add_file_to_zipfile(new_zipfile, temp_file_name, new_name)
@@ -131,7 +134,7 @@ def add_file_to_zipfile(new_zipfile, name, new_name):
 def extract_pdf_from_zip(name, current_zipfile, decap_name, poa_config):
     # we extract the pdf from the zipfile
     file_from_zip = current_zipfile.read(name)
-    decap_name_plus_path = poa_config.get('tmp_dir') + "/" + decap_name
+    decap_name_plus_path = poa_config.get("tmp_dir") + "/" + decap_name
     # we save the pdf to a local file
     with open(decap_name_plus_path, "wb") as temp_file:
         temp_file.write(file_from_zip)
@@ -139,7 +142,9 @@ def extract_pdf_from_zip(name, current_zipfile, decap_name, poa_config):
 
 
 def pdf_new_name(pdf_name, title, doi, poa_config):
-    new_name = gen_new_name_for_file(pdf_name, title, doi, poa_config.get('filename_pattern'))
+    new_name = gen_new_name_for_file(
+        pdf_name, title, doi, poa_config.get("filename_pattern")
+    )
     LOGGER.info("new_name: %s", new_name)
     return new_name
 
@@ -166,15 +171,25 @@ def decap_the_pdf(decap_name_plus_path, poa_config):
     try:
         # pass the local file path, and the path to a temp dir, to the decapitation script
         decap_status = func_timeout(
-            PDF_DECAPITATE_TIMEOUT, decapitate_pdf_with_error_check, args=(
-                decap_name_plus_path, poa_config.get('decapitate_pdf_dir') + os.sep, poa_config))
+            PDF_DECAPITATE_TIMEOUT,
+            decapitate_pdf_with_error_check,
+            args=(
+                decap_name_plus_path,
+                poa_config.get("decapitate_pdf_dir") + os.sep,
+                poa_config,
+            ),
+        )
     except FunctionTimedOut:
         decap_status = False
-        LOGGER.error("PDF decap did not finish within %s seconds", PDF_DECAPITATE_TIMEOUT)
+        LOGGER.error(
+            "PDF decap did not finish within %s seconds", PDF_DECAPITATE_TIMEOUT
+        )
     return decap_status
 
 
-def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa_config):
+def copy_pdf_to_output_dir(
+    file_title_map, output_dir, doi, current_zipfile, poa_config
+):
     """
     we will attempt to generate a headless pdf and move this pdf
     to the output directory.
@@ -190,7 +205,8 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
     new_name = pdf_new_name(name, title, doi, poa_config)
     decap_name = pdf_decap_name(new_name)
     decap_name_plus_path = extract_pdf_from_zip(
-        name, current_zipfile, decap_name, poa_config)
+        name, current_zipfile, decap_name, poa_config
+    )
 
     decap_status = decap_the_pdf(decap_name_plus_path, poa_config)
 
@@ -198,7 +214,9 @@ def copy_pdf_to_output_dir(file_title_map, output_dir, doi, current_zipfile, poa
         # pass the local file path, and the path to a temp dir, to the decapiation script
         try:
             file_content = None
-            pdf_file_name = os.path.join(poa_config.get('decapitate_pdf_dir'), decap_name)
+            pdf_file_name = os.path.join(
+                poa_config.get("decapitate_pdf_dir"), decap_name
+            )
             with open(pdf_file_name, "rb") as open_file:
                 file_content = open_file.read()
             if file_content:
@@ -219,16 +237,18 @@ def remove_pdf_from_file_title_map(file_title_map):
         title = file_title_map[name]
         if title == "Merged PDF":
             continue
-        else:
-            new_map[name] = title
+        new_map[name] = title
     return new_map
 
 
 def move_new_zipfile(doi, poa_config):
-    filename_pattern = poa_config.get('zipfile_pattern')
+    filename_pattern = poa_config.get("zipfile_pattern")
     new_zipfile_name = get_new_zipfile_name(doi, filename_pattern)
-    new_zipfile_name_plus_path = poa_config.get('tmp_dir') + "/" + new_zipfile_name
-    shutil.move(new_zipfile_name_plus_path, poa_config.get('output_dir') + "/" + new_zipfile_name)
+    new_zipfile_name_plus_path = poa_config.get("tmp_dir") + "/" + new_zipfile_name
+    shutil.move(
+        new_zipfile_name_plus_path,
+        poa_config.get("output_dir") + "/" + new_zipfile_name,
+    )
 
 
 def process_zipfile(zipfile_name, poa_config=None):
@@ -237,17 +257,19 @@ def process_zipfile(zipfile_name, poa_config=None):
         poa_config = parse_raw_config(raw_config(None))
 
     # open the zip file
-    current_zipfile = zipfile.ZipFile(zipfile_name, 'r')
+    current_zipfile = zipfile.ZipFile(zipfile_name, "r")
     doi = get_doi_from_zipfile(current_zipfile)
     file_title_map = get_filename_new_title_map(current_zipfile)
-    copy_pdf_to_output_dir(file_title_map, poa_config.get('output_dir'), doi,
-                           current_zipfile, poa_config)
+    copy_pdf_to_output_dir(
+        file_title_map, poa_config.get("output_dir"), doi, current_zipfile, poa_config
+    )
     pdfless_file_title_map = remove_pdf_from_file_title_map(file_title_map)
 
     # supplements zip file
     new_zipfile = gen_new_zipfile(doi, poa_config)
-    move_files_into_new_zipfile(current_zipfile, pdfless_file_title_map, new_zipfile, doi,
-                                poa_config)
+    move_files_into_new_zipfile(
+        current_zipfile, pdfless_file_title_map, new_zipfile, doi, poa_config
+    )
 
     # Close zip files before moving
     new_zipfile.close()
