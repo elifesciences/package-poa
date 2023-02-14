@@ -38,8 +38,8 @@ def decapitate_pdf_with_error_check(pdf_in, pdf_out_dir, poa_config=None):
 
     # subprocess.Popen doesn't interleave pipe output,
     # so neither will these log messages
-    map(LOGGER.info, stdout.splitlines())
-    map(LOGGER.error, stderr.splitlines())
+    [LOGGER.info(line.decode('utf-8')), stdout.splitlines()]
+    [LOGGER.error(line.decode('utf-8')), stderr.splitlines()]
 
     return stderr != ""  # no errors
 
