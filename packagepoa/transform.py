@@ -103,8 +103,7 @@ def gen_new_zipfile(doi, poa_config):
     filename_pattern = poa_config.get("zipfile_pattern")
     new_zipfile_name = get_new_zipfile_name(doi, filename_pattern)
     new_zipfile_name_plus_path = poa_config.get("tmp_dir") + "/" + new_zipfile_name
-    new_zipfile = zipfile.ZipFile(new_zipfile_name_plus_path, "w")
-    return new_zipfile
+    return new_zipfile_name_plus_path
 
 
 def move_files_into_new_zipfile(
@@ -222,10 +221,10 @@ def copy_pdf_to_output_dir(
             if file_content:
                 with open(os.path.join(output_dir, new_name), "wb") as out_handler:
                     out_handler.write(file_content)
-        except IOError:
+        except IOError as ioe:
             # The decap may return true but the file does not exist for some reason
             #  allow the transformation to continue in order to processes the supplementary files
-            LOGGER.error("decap returned true but the pdf file is missing %s", new_name)
+            LOGGER.error("decap returned true but the pdf file is missing %s: %s", new_name, ioe)
     else:
         # if the decapitation script has failed
         LOGGER.error("could not decapitate %s", new_name)
@@ -257,22 +256,20 @@ def process_zipfile(zipfile_name, poa_config=None):
         poa_config = parse_raw_config(raw_config(None))
 
     # open the zip file
-    current_zipfile = zipfile.ZipFile(zipfile_name, "r")
-    doi = get_doi_from_zipfile(current_zipfile)
-    file_title_map = get_filename_new_title_map(current_zipfile)
-    copy_pdf_to_output_dir(
-        file_title_map, poa_config.get("output_dir"), doi, current_zipfile, poa_config
-    )
-    pdfless_file_title_map = remove_pdf_from_file_title_map(file_title_map)
+    with zipfile.ZipFile(zipfile_name, "r") as current_zipfile:
+        doi = get_doi_from_zipfile(current_zipfile)
+        file_title_map = get_filename_new_title_map(current_zipfile)
+        copy_pdf_to_output_dir(
+            file_title_map, poa_config.get("output_dir"), doi, current_zipfile, poa_config
+        )
+        pdfless_file_title_map = remove_pdf_from_file_title_map(file_title_map)
 
-    # supplements zip file
-    new_zipfile = gen_new_zipfile(doi, poa_config)
-    move_files_into_new_zipfile(
-        current_zipfile, pdfless_file_title_map, new_zipfile, doi, poa_config
-    )
+        # supplements zip file
+        new_zipfile_path = gen_new_zipfile(doi, poa_config)
+        with zipfile.ZipFile(new_zipfile_path, "w") as new_zipfile:
+            move_files_into_new_zipfile(
+                current_zipfile, pdfless_file_title_map, new_zipfile, doi, poa_config
+            )
 
-    # Close zip files before moving
-    new_zipfile.close()
-    current_zipfile.close()
     move_new_zipfile(doi, poa_config)
     return True
