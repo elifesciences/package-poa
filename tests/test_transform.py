@@ -184,6 +184,7 @@ class TestTransform(unittest.TestCase):
             ('', None),
             ([], None),
             ({}, None),
+            (7, None),
             ('not_a_doi', None),
         ]
         for given, expected in cases:
