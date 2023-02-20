@@ -7,7 +7,7 @@ find the pdf file and decapitate the cover page from it
 move the PDF to the output directory
 move the new zip file to the output directory
 """
-
+import re
 import zipfile
 import logging
 import shutil
@@ -35,8 +35,15 @@ PDF_DECAPITATE_TIMEOUT = 120
 
 
 def article_id_from_doi(doi):
-    article_id = doi.split(".")[-1]
-    return article_id
+    "return just the article id portion of an eLife doi as a string"
+    if not doi:
+        return
+    if not isinstance(doi, str):
+        return
+    regex = r"10.7554/elife\.(?P<msid>\d+)"
+    match_list = re.findall(regex, doi, re.IGNORECASE)
+    if len(match_list) > 0:
+        return match_list[0]
 
 
 def gen_new_name_for_file(name, title, doi, filename_pattern):
