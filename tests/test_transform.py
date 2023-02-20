@@ -162,30 +162,31 @@ class TestTransform(unittest.TestCase):
 
     def test_article_id_from_doi(self):
         cases = [
-            ('10.7554/eLife.09560', '09560'),
+            ("10.7554/eLife.09560", "09560"),
             # component
-            ('10.7554/eLife.09560.sa0', '09560'),
+            ("10.7554/eLife.09560.sa0", "09560"),
             # versioned
-            ('10.7554/eLife.09560.1', '09560'),
-            ('10.7554/eLife.09560.1.sa0', '09560'),
+            ("10.7554/eLife.09560.1", "09560"),
+            ("10.7554/eLife.09560.1.sa0", "09560"),
             # testing msid
-            ('10.7554/eLife.97832421234567890', '97832421234567890'),
+            ("10.7554/eLife.97832421234567890", "97832421234567890"),
             # case insensitive
-            ('10.7554/ELIFE.09560', '09560'),
+            ("10.7554/ELIFE.09560", "09560"),
             # URL format
             ("https://doi.org/10.7554/eLife.09560.1.sa0", "09560"),
             # unlikely cases
-            ('10.7554/eLife.0', '0'),
-            ('10.7554/eLife.0.1', '0'),
-            ('10.7554/eLife.0.1.2.3.4', '0'),
-
+            ("10.7554/eLife.0", "0"),
+            ("10.7554/eLife.0.1", "0"),
+            ("10.7554/eLife.0.1.2.3.4", "0"),
             # no match cases
             (None, None),
-            ('', None),
+            ("", None),
             ([], None),
             ({}, None),
             (7, None),
-            ('not_a_doi', None),
+            ("not_a_doi", None),
         ]
         for given, expected in cases:
-            self.assertEqual(transform.article_id_from_doi(given), expected, "failed case %r" % given )
+            self.assertEqual(
+                transform.article_id_from_doi(given), expected, "failed case %r" % given
+            )

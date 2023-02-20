@@ -231,7 +231,9 @@ def copy_pdf_to_output_dir(
         except IOError as ioe:
             # The decap may return true but the file does not exist for some reason
             #  allow the transformation to continue in order to processes the supplementary files
-            LOGGER.error("decap returned true but the pdf file is missing %s: %s", new_name, ioe)
+            LOGGER.error(
+                "decap returned true but the pdf file is missing %s: %s", new_name, ioe
+            )
     else:
         # if the decapitation script has failed
         LOGGER.error("could not decapitate %s", new_name)
@@ -267,7 +269,11 @@ def process_zipfile(zipfile_name, poa_config=None):
         doi = get_doi_from_zipfile(current_zipfile)
         file_title_map = get_filename_new_title_map(current_zipfile)
         copy_pdf_to_output_dir(
-            file_title_map, poa_config.get("output_dir"), doi, current_zipfile, poa_config
+            file_title_map,
+            poa_config.get("output_dir"),
+            doi,
+            current_zipfile,
+            poa_config,
         )
         pdfless_file_title_map = remove_pdf_from_file_title_map(file_title_map)
 
