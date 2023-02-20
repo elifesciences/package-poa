@@ -172,6 +172,8 @@ class TestTransform(unittest.TestCase):
             ('10.7554/eLife.97832421234567890', '97832421234567890'),
             # case insensitive
             ('10.7554/ELIFE.09560', '09560'),
+            # URL format
+            ("https://doi.org/10.7554/eLife.09560.1.sa0", "09560"),
             # unlikely cases
             ('10.7554/eLife.0', '0'),
             ('10.7554/eLife.0.1', '0'),
