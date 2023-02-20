@@ -40,7 +40,7 @@ def article_id_from_doi(doi):
         return
     if not isinstance(doi, str):
         return
-    regex = r"10.7554/elife\.(?P<msid>\d+)"
+    regex = r"10\.7554/elife\.(?P<msid>\d+)"
     match_list = re.findall(regex, doi, re.IGNORECASE)
     if len(match_list) > 0:
         return match_list[0]
